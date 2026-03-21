@@ -1,65 +1,99 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from 'react';
+import { useDossierStore } from '@/store/useDossierStore';
+import { Accueil } from '@/components/steps/Accueil';
+import { InformationsGenerales } from '@/components/steps/InformationsGenerales';
+import { VisiteAvantDevis } from '@/components/steps/VisiteAvantDevis';
+import { Devis } from '@/components/steps/Devis';
+import { BonIntervention } from '@/components/steps/BonIntervention';
+import { RapportIntervention } from '@/components/steps/RapportIntervention';
+import { ExportFinal } from '@/components/steps/ExportFinal';
+import { ClipboardList, ClipboardSignature, Wrench, HardHat, FileText, CheckCircle2 } from 'lucide-react';
+
+const steps = [
+  { id: 1, title: 'Infos', icon: <ClipboardList className="w-5 h-5" /> },
+  { id: 2, title: 'Visite', icon: <HardHat className="w-5 h-5" /> },
+  { id: 3, title: 'Devis', icon: <FileText className="w-5 h-5" /> },
+  { id: 4, title: 'Inter.', icon: <Wrench className="w-5 h-5" /> },
+  { id: 5, title: 'Rapport', icon: <ClipboardSignature className="w-5 h-5" /> },
+  { id: 6, title: 'Export', icon: <CheckCircle2 className="w-5 h-5" /> },
+];
 
 export default function Home() {
+  const currentStep = useDossierStore((state) => state.currentStep);
+  const setField = useDossierStore((state) => state.setField);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Chargement...</div>;
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0: return <Accueil />;
+      case 1: return <InformationsGenerales />;
+      case 2: return <VisiteAvantDevis />;
+      case 3: return <Devis />;
+      case 4: return <BonIntervention />;
+      case 5: return <RapportIntervention />;
+      case 6: return <ExportFinal />;
+      default: return <Accueil />;
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="min-h-screen text-slate-100 pb-20 relative font-sans">
+      
+      {/* Background global industriel profond avec overlay */}
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-slate-950"
+        style={{ backgroundImage: "url('/snimop-bg.jpg')" }}
+      />
+      {/* Overlay plus prononcé pour contraster avec le verre dépoli blanc/gris des cartes */}
+      <div className="fixed inset-0 z-0 bg-[#070b14]/80 backdrop-blur-sm" />
+
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Header premium avec logo SNIMOP principal (PNG Transparent, +35% taille) */}
+        <header className="bg-slate-900/60 backdrop-blur-xl border-b border-white/5 p-3 sticky top-0 z-50 shadow-2xl flex items-center justify-center min-h-[76px]">
+          <img src="/snimop-logo.png" alt="" className="w-[180px] md:w-[220px] h-auto object-contain drop-shadow-lg" />
+        </header>
+
+        {/* Stepper Premium */}
+        {currentStep > 0 && currentStep <= 6 && (
+          <div className="bg-slate-900/50 backdrop-blur-lg border-b border-white/5 py-4 px-2 mb-6 overflow-x-auto shadow-xl sticky top-[60px] z-40">
+            <div className="flex items-center min-w-max px-2 justify-between max-w-3xl mx-auto">
+              {steps.map((step, idx) => (
+                <div key={step.id} className="flex items-center flex-1">
+                  <div
+                    className={`flex flex-col items-center justify-center cursor-pointer transition-all duration-300 w-full ${
+                      currentStep === step.id ? 'text-blue-400 scale-110' : currentStep > step.id ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-400'
+                    }`}
+                    onClick={() => setField('currentStep', step.id)}
+                  >
+                    <div className={`p-2.5 rounded-full mb-1 flex items-center justify-center shadow-inner transition-colors ${
+                      currentStep === step.id ? 'bg-blue-500/20 ring-1 ring-blue-400/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : currentStep > step.id ? 'bg-emerald-500/10' : 'bg-slate-800/40'
+                    }`}>
+                      {step.icon}
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{step.title}</span>
+                  </div>
+                  {idx < steps.length - 1 && (
+                    <div className={`w-full h-[2px] mx-1 flex-1 rounded-full transition-colors ${currentStep > step.id ? 'bg-emerald-500/40 shadow-[0_0_5px_rgba(16,185,129,0.3)]' : 'bg-slate-700/30'}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <main className="max-w-3xl mx-auto px-4 w-full flex-1">
+          {renderStep()}
+        </main>
+      </div>
     </div>
   );
 }
