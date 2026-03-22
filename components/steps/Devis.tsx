@@ -207,6 +207,16 @@ export function Devis() {
         
         <div className="flex flex-wrap items-center gap-3">
           <Button 
+            variant="outline" 
+            size="sm"
+            className="bg-blue-500/10 border-blue-400/30 text-blue-300 hover:bg-blue-500/20 font-bold px-4 py-4 rounded-xl shadow-lg h-auto"
+            onClick={() => (window as any).triggerSpecificPDF?.('devis')}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            PDF Devis
+          </Button>
+
+          <Button 
             variant={store.devisModeRapide ? "default" : "outline"} 
             onClick={toggleModeRapide}
             className={`gap-2 font-bold px-4 py-4 rounded-xl shadow-lg transition-all ${store.devisModeRapide ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-none' : 'hover:bg-slate-800 text-slate-300 border-slate-600'}`}
@@ -369,17 +379,6 @@ export function Devis() {
             </div>
             
             <div className="flex items-center gap-2">
-               {/* BOUTON EXPORT INDIVIDUEL */}
-               <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8 px-2 bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
-                onClick={() => (window as any).triggerSpecificPDF?.('devis')}
-               >
-                 <Download className="w-4 h-4 mr-1" />
-                 PDF Devis
-               </Button>
-
                {/* BADGE DE MODE ACTIF */}
                <div className={`text-[10px] font-black px-3 py-1 rounded-full border ${
                  calcMode === 'IMPOSÉ' ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' :
