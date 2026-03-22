@@ -81,16 +81,19 @@ export function Devis() {
     const nacelle = (!devisModeRapide && nacelleActive) ? Number(coutNacelleHT) : 0;
     const dep = !devisModeRapide ? Number(coutDeplacementHT) : 0;
     const items = !devisModeRapide ? Number(autresFraisHT) : 0;
+
+    const safeMargePct = Math.min(Math.max(Number(margePourcentage) || 0, -100), 1000);
+    const safeTvaPct = Math.min(Math.max(Number(tvaPourcentage) || 0, 0), 100);
     
-    const internalTotal = Number(coutMaterielHT) + mo + dep + nacelle + items;
-    const marge = internalTotal * (Number(margePourcentage) / 100);
+    const internalTotal = (Number(coutMaterielHT) || 0) + mo + dep + nacelle + items;
+    const marge = internalTotal * (safeMargePct / 100);
     const baseHT = internalTotal + marge;
     
     const isOverride = prixFinalManuel !== null && prixFinalManuel !== undefined && String(prixFinalManuel) !== '';
-    const finalHT = isOverride ? Number(prixFinalManuel) : baseHT + Number(ajustementManuel);
+    const finalHT = isOverride ? Number(prixFinalManuel) : baseHT + (Number(ajustementManuel) || 0);
     
     // SECURE TVA CALCULATION
-    const tvaVal = finalHT * (Number(tvaPourcentage) / 100);
+    const tvaVal = finalHT * (safeTvaPct / 100);
     const ttc = finalHT + tvaVal;
     
     const acompte = acompteDemande ? ttc * (Number(acomptePourcentage) / 100) : 0;
@@ -101,18 +104,13 @@ export function Devis() {
     let mIcon = '🟢';
     let mText = 'Rentable';
     
-    if (margePourcentage < 10) {
+    if (safeMargePct < 10) {
       mColor = 'text-red-400'; mBg = 'bg-red-500/10 border-red-500/30'; mIcon = '🔴'; mText = 'Marge trop faible';
-    } else if (margePourcentage <= 25) {
+    } else if (safeMargePct <= 25) {
       mColor = 'text-yellow-400'; mBg = 'bg-yellow-500/10 border-yellow-500/30'; mIcon = '🟡'; mText = 'Marge correcte';
-    } else if (margePourcentage > 40) {
+    } else if (safeMargePct > 40) {
       mColor = 'text-emerald-400'; mBg = 'bg-emerald-500/10 border-emerald-500/30'; mIcon = '🟢🟢'; mText = 'Très rentable';
     }
-
-    console.log('--- CHIFFRAGE DEBUG ---', {
-      internalTotal, marge, baseHT, finalHT, tvaVal, ttc, acompte, 
-      margePourcentage, tvaPourcentage, prixFinalManuel, ajustementManuel
-    });
 
     return {
       totalMoHT: mo,
