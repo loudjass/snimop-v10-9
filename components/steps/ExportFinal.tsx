@@ -286,77 +286,66 @@ export function ExportFinal() {
 
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(120, 120, 120);
+        pdf.setTextColor(80, 80, 80);
         pdf.text("PHOTOS ET ILLUSTRATIONS :", 15, y);
         y += 8;
 
-        const photoWidth = 85;
-        const photoHeight = 65; // Un peu plus grand
-        const descHeight = 22;  // Bloc descriptif haut de gamme
-        const gap = 10;
+        const photoWidth = 86; // 2 cols total: 86*2 + 10 = 182. Center in 195 (15+182=197? No, 15+180=195).
+        const photoHeight = 62; 
+        const descBoxHeight = 22;
+        const gap = 8;
+        const startX = 15;
 
         for (let i = 0; i < filtered.length; i++) {
           const photo = filtered[i];
           const photoData = await loadPhotoBase64(photo.imageBase64);
           if (photoData) {
-            const containerX = 15 + (i % 2) * (photoWidth + gap);
+            const containerX = startX + (i % 2) * (photoWidth + gap);
             const containerY = y;
 
-            // --- CALCUL RATIO ---
-            let drawWidth = photoWidth;
-            let drawHeight = photoWidth / photoData.ratio;
-            if (drawHeight > photoHeight) {
-              drawHeight = photoHeight;
-              drawWidth = photoHeight * photoData.ratio;
+            // 1. CADRE PHOTO UNIFORME (Style Industriel)
+            pdf.setDrawColor(180, 180, 180);
+            pdf.setLineWidth(0.2);
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(containerX, containerY, photoWidth, photoHeight, 'FD');
+
+            // --- CALCUL RATIO POUR CENTRAGE DANS CADRE FIXE ---
+            let drawWidth = photoWidth - 4; // padding interne 2mm
+            let drawHeight = drawWidth / photoData.ratio;
+            if (drawHeight > photoHeight - 4) {
+              drawHeight = photoHeight - 4;
+              drawWidth = drawHeight * photoData.ratio;
             }
             const offsetX = (photoWidth - drawWidth) / 2;
             const offsetY = (photoHeight - drawHeight) / 2;
 
-            // 1. OMBRE / FOND DU BLOC
-            pdf.setFillColor(245, 247, 250);
-            pdf.roundedRect(containerX - 1, containerY - 1, photoWidth + 2, photoHeight + descHeight + 2, 2, 2, 'F');
-            
-            // 2. CADRE PHOTO AVEC BORDURE ACCENT PÉNOMBRE
-            pdf.setFillColor(15, 23, 42); // Fond sombre derrière l'image si ratio différent
-            pdf.rect(containerX, containerY, photoWidth, photoHeight, 'F');
+            // Image
             pdf.addImage(photoData.img, 'JPEG', containerX + offsetX, containerY + offsetY, drawWidth, drawHeight);
             
-            // Bordure pro
-            pdf.setDrawColor(30, 58, 138);
-            pdf.setLineWidth(0.8);
-            pdf.line(containerX, containerY, containerX + photoWidth, containerY); // Ligne d'accent haut
+            // 2. BLOC DESCRIPTIF SOUS PHOTO
+            const descY = containerY + photoHeight;
+            pdf.setFillColor(248, 248, 248);
+            pdf.setDrawColor(180, 180, 180);
+            pdf.rect(containerX, descY, photoWidth, descBoxHeight, 'FD');
 
-            // 3. BLOC DESCRIPTIF STRUCTURE
-            const descY = containerY + photoHeight + 4;
-            
-            // Type Badge
+            // Metadata (Type & Date) - Simple et propre
             pdf.setFontSize(7);
             pdf.setFont("helvetica", "bold");
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFillColor(30, 58, 138);
-            pdf.roundedRect(containerX + 2, descY, 20, 4, 1, 1, 'F');
-            pdf.text(photo.type.toUpperCase(), containerX + 12, descY + 3, { align: 'center' });
+            pdf.setTextColor(100, 100, 100);
+            const metadata = `${photo.type.toUpperCase()} ${photo.timestamp ? ' | ' + format(new Date(photo.timestamp), 'dd/MM/yyyy') : ''}`;
+            pdf.text(metadata, containerX + 3, descY + 5);
 
-            // Timestamp
-            if (photo.timestamp) {
-              pdf.setTextColor(150, 150, 150);
-              pdf.setFontSize(7);
-              pdf.setFont("helvetica", "normal");
-              const dateTxt = format(new Date(photo.timestamp), 'dd/MM/yyyy HH:mm');
-              pdf.text(dateTxt, containerX + photoWidth - 2, descY + 3, { align: 'right' });
-            }
-
-            // Description / Titre
-            pdf.setFontSize(9);
-            pdf.setFont("helvetica", "bold");
-            pdf.setTextColor(51, 65, 85);
+            // Description avec Padding
+            pdf.setFontSize(8.5);
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(40, 40, 40);
             const title = photo.title || "Observation technique";
-            const lines = pdf.splitTextToSize(title, photoWidth - 4);
-            pdf.text(lines, containerX + 2, descY + 10);
+            const lines = pdf.splitTextToSize(title, photoWidth - 6);
+            pdf.text(lines, containerX + 3, descY + 11);
           }
         }
         
-        y += photoHeight + descHeight + 20;
+        y += photoHeight + descBoxHeight + 20;
       };
 
       // PAGE 2
