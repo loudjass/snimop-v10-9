@@ -290,11 +290,22 @@ export function ExportFinal() {
         pdf.text("PHOTOS ET ILLUSTRATIONS :", 15, y);
         y += 8;
 
-        const photoWidth = 86; // 2 cols total: 86*2 + 10 = 182. Center in 195 (15+182=197? No, 15+180=195).
+        const photoWidth = 86; 
         const photoHeight = 62; 
-        const descBoxHeight = 22;
+        const descBoxHeight = 25; // Un peu plus grand pour le titre
         const gap = 8;
         const startX = 15;
+
+        // MAP TYPE TO LABEL
+        const getPhotoLabel = (type: string) => {
+          switch(type) {
+            case 'Avant': return 'ETAT AVANT INTERVENTION';
+            case 'Après': return 'ETAT APRÈS INTERVENTION';
+            case 'Pendant': return 'EN COURS D\'INTERVENTION';
+            case 'Plan': return 'PLAN / SCHÉMA / DOCUMENT';
+            default: return 'OBSERVATION TECHNIQUE';
+          }
+        };
 
         for (let i = 0; i < filtered.length; i++) {
           const photo = filtered[i];
@@ -303,14 +314,14 @@ export function ExportFinal() {
             const containerX = startX + (i % 2) * (photoWidth + gap);
             const containerY = y;
 
-            // 1. CADRE PHOTO UNIFORME (Style Industriel)
+            // 1. CADRE PHOTO UNIFORME
             pdf.setDrawColor(180, 180, 180);
             pdf.setLineWidth(0.2);
             pdf.setFillColor(255, 255, 255);
             pdf.rect(containerX, containerY, photoWidth, photoHeight, 'FD');
 
-            // --- CALCUL RATIO POUR CENTRAGE DANS CADRE FIXE ---
-            let drawWidth = photoWidth - 4; // padding interne 2mm
+            // --- CALCUL RATIO ---
+            let drawWidth = photoWidth - 4; 
             let drawHeight = drawWidth / photoData.ratio;
             if (drawHeight > photoHeight - 4) {
               drawHeight = photoHeight - 4;
@@ -322,26 +333,30 @@ export function ExportFinal() {
             // Image
             pdf.addImage(photoData.img, 'JPEG', containerX + offsetX, containerY + offsetY, drawWidth, drawHeight);
             
-            // 2. BLOC DESCRIPTIF SOUS PHOTO
+            // 2. BLOC DESCRIPTIF "CHANTIER"
             const descY = containerY + photoHeight;
             pdf.setFillColor(248, 248, 248);
             pdf.setDrawColor(180, 180, 180);
             pdf.rect(containerX, descY, photoWidth, descBoxHeight, 'FD');
 
-            // Metadata (Type & Date) - Simple et propre
-            pdf.setFontSize(7);
-            pdf.setFont("helvetica", "bold");
-            pdf.setTextColor(100, 100, 100);
-            const metadata = `${photo.type.toUpperCase()} ${photo.timestamp ? ' | ' + format(new Date(photo.timestamp), 'dd/MM/yyyy') : ''}`;
-            pdf.text(metadata, containerX + 3, descY + 5);
+            // Séparateur léger
+            pdf.setDrawColor(220, 220, 220);
+            pdf.line(containerX + 5, descY, containerX + photoWidth - 5, descY);
 
-            // Description avec Padding
+            // Petit Titre Structuré
+            pdf.setFontSize(7.5);
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(30, 58, 138); // Bleu SNIMOP discret
+            pdf.text(getPhotoLabel(photo.type), containerX + 4, descY + 6);
+
+            // Description avec largeur réduite pour lisibilité
             pdf.setFontSize(8.5);
             pdf.setFont("helvetica", "normal");
             pdf.setTextColor(40, 40, 40);
-            const title = photo.title || "Observation technique";
-            const lines = pdf.splitTextToSize(title, photoWidth - 6);
-            pdf.text(lines, containerX + 3, descY + 11);
+            const title = photo.title || "Aucune observation particulière renseignée";
+            const textWidth = photoWidth - 12; // Plus de padding
+            const lines = pdf.splitTextToSize(title, textWidth);
+            pdf.text(lines, containerX + 4, descY + 12);
           }
         }
         
