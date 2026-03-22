@@ -58,27 +58,44 @@ export function Accueil() {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {savedDossiers.map(d => (
-              <div key={d.id} className="bg-slate-800/60 backdrop-blur-md rounded-2xl p-5 border border-slate-700/70 shadow-lg flex flex-col md:flex-row gap-6 justify-between items-start md:items-center hover:bg-slate-800 transition-colors group">
+            {savedDossiers.map(d => {
+              let mainTitle = '';
+              let secondaryTitle = '';
+
+              if (d.client && d.client.trim() !== '') {
+                mainTitle = d.client;
+                secondaryTitle = (d.site && d.site.trim() !== '') ? d.site : (d.numeroAffaire || '');
+              } else if (d.site && d.site.trim() !== '') {
+                mainTitle = d.site;
+                secondaryTitle = d.numeroAffaire || '';
+              } else {
+                mainTitle = d.numeroAffaire || 'Sans Numéro';
+                secondaryTitle = ''; 
+              }
+
+              return (
+              <div key={d.id} className="bg-slate-800/60 backdrop-blur-md rounded-2xl p-5 border border-slate-700/70 shadow-lg flex flex-col md:flex-row gap-6 justify-between items-start md:items-center hover:bg-slate-800 transition-colors group overflow-hidden">
                 
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold font-mono text-sm tracking-wide">
-                      {d.numeroAffaire || 'Sans Numéro'}
-                    </span>
+                <div className="flex flex-col gap-1.5 min-w-0 flex-1 w-full">
+                  <div className="flex items-center gap-3 mb-1">
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${d.status === 'Exporté' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : d.status === 'En cours' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : d.status === 'Terminé' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>
                       {d.status || 'Brouillon'}
                     </span>
                   </div>
                   
-                  <h3 className="text-xl font-bold text-slate-100 mt-1">
-                    {d.client || 'Client anonyme'}
-                    {d.site && <span className="text-slate-400 font-normal"> — {d.site}</span>}
+                  <h3 className="text-xl font-bold text-slate-100 truncate pr-4" title={mainTitle}>
+                    {mainTitle}
                   </h3>
                   
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-400 mt-1">
+                  {secondaryTitle && (
+                    <p className="text-[15px] font-medium text-slate-400/80 truncate pr-4" title={secondaryTitle}>
+                      {secondaryTitle}
+                    </p>
+                  )}
+                  
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs md:text-sm text-slate-500 mt-1">
                     <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Modifié le {format(new Date(d.updatedAt || new Date()), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}</span>
-                    {d.interventionType && <span>• {d.interventionType}</span>}
+                    {d.interventionType && <span className="text-blue-400/70 font-semibold">• {d.interventionType}</span>}
                   </div>
                 </div>
 
@@ -114,7 +131,8 @@ export function Accueil() {
                 </div>
 
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
       </div>
