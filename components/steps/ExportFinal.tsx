@@ -385,39 +385,66 @@ export function ExportFinal() {
       }
 
       // ==========================================
-      // PAGE PHOTOS (ANNEXE)
+      // PAGE PHOTOS (ANNEXE) - OPTIMISÉ 2 PER PAGE
       // ==========================================
       if (validPhotos.length > 0) {
-        pdf.addPage();
-        y = drawHeader(pdf, "ANNEXE PHOTOS");
-        let currentPhotoY = y + 10;
-        const maxW = 182;
-        const maxH = 110; 
+        let chunkedPhotos: {img: HTMLImageElement, ratio: number}[][] = [];
+        for (let i = 0; i < validPhotos.length; i += 2) {
+          chunkedPhotos.push(validPhotos.slice(i, i + 2));
+        }
 
-        for (let i = 0; i < validPhotos.length; i++) {
-          const p = validPhotos[i];
-          let drawW = maxW;
-          let drawH = drawW / p.ratio;
+        for (let pageIdx = 0; pageIdx < chunkedPhotos.length; pageIdx++) {
+          pdf.addPage();
+          const title = pageIdx === 0 ? "ANNEXE PHOTOS" : "ANNEXE PHOTOS (Suite)";
+          let currentPhotoY = drawHeader(pdf, title) + 15;
+          const pagePhotos = chunkedPhotos[pageIdx];
 
-          if (drawH > maxH) {
-            drawH = maxH;
-            drawW = drawH * p.ratio;
+          if (pagePhotos.length === 1) {
+            // 1 Photo unique : Grande et centrée
+            const p = pagePhotos[0];
+            const maxW = 160;
+            const maxH = 190;
+            let drawW = maxW;
+            let drawH = drawW / p.ratio;
+
+            if (drawH > maxH) {
+              drawH = maxH;
+              drawW = drawH * p.ratio;
+            }
+
+            const drawX = 14 + (182 - drawW) / 2;
+            try {
+              pdf.addImage(p.img, 'JPEG', drawX, currentPhotoY, drawW, drawH);
+              pdf.setDrawColor(200, 200, 200);
+              pdf.setLineWidth(0.5);
+              pdf.rect(drawX, currentPhotoY, drawW, drawH);
+            } catch(e) { console.error("Could not add image to PDF", e); }
+          } else {
+            // 2 Photos maxi : Proprement réparties
+            const maxW = 150;
+            const maxH = 100; 
+            
+            for (let i = 0; i < pagePhotos.length; i++) {
+              const p = pagePhotos[i];
+              let drawW = maxW;
+              let drawH = drawW / p.ratio;
+
+              if (drawH > maxH) {
+                drawH = maxH;
+                drawW = drawH * p.ratio;
+              }
+
+              const drawX = 14 + (182 - drawW) / 2;
+              try {
+                pdf.addImage(p.img, 'JPEG', drawX, currentPhotoY, drawW, drawH);
+                pdf.setDrawColor(200, 200, 200);
+                pdf.setLineWidth(0.5);
+                pdf.rect(drawX, currentPhotoY, drawW, drawH);
+              } catch(e) { console.error("Could not add image to PDF", e); }
+
+              currentPhotoY += drawH + 18; // Espace inter-photos propre
+            }
           }
-
-          if (currentPhotoY + drawH > 280) {
-            pdf.addPage();
-            currentPhotoY = drawHeader(pdf, "ANNEXE PHOTOS (Suite)");
-            currentPhotoY += 10;
-          }
-
-          const drawX = 14 + (maxW - drawW) / 2;
-          try {
-            pdf.addImage(p.img, 'JPEG', drawX, currentPhotoY, drawW, drawH);
-            pdf.setDrawColor(200, 200, 200);
-            pdf.rect(drawX, currentPhotoY, drawW, drawH);
-          } catch(e) { console.error("Could not add image to PDF", e); }
-
-          currentPhotoY += drawH + 10;
         }
       }
 
@@ -529,31 +556,31 @@ export function ExportFinal() {
   };
 
   return (
-    <div className="flex flex-col gap-6 py-2">
+    <div className="flex flex-col gap-6 py-2 pb-10">
       <h2 className="text-3xl md:text-4xl font-black border-b border-white/10 pb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
-        Export du dossier
+        Export du final
       </h2>
-      <div className="bg-[#0f172a]/70 backdrop-blur-2xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-700/50 flex flex-col gap-8 mt-2">
+      <div className="bg-[#0f172a]/70 backdrop-blur-2xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-700/50 flex flex-col gap-8 mt-2 relative z-30">
 
         {/* Pre-export summary */}
-        <div className="bg-slate-800/50 border border-slate-600 rounded-2xl p-4 text-sm text-slate-300">
-          <h4 className="font-bold text-white mb-2 pb-2 border-b border-slate-700">Résumé avant export</h4>
-          <ul className="flex flex-col gap-2 mt-2">
-            <li className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-400" />
-              <span>Document principal : <strong className="text-white">{store.typeDoc}</strong></span>
+        <div className="bg-slate-800/80 border border-slate-600 rounded-2xl p-5 text-sm text-slate-200 shadow-md">
+          <h4 className="font-bold text-white mb-3 pb-3 border-b border-slate-600/50 text-base uppercase tracking-wider">Résumé avant export</h4>
+          <ul className="flex flex-col gap-3">
+            <li className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-400 drop-shadow-sm" />
+              <span className="text-[15px]">Document principal : <strong className="text-white ml-1">{store.typeDoc}</strong></span>
             </li>
-            <li className="flex items-center gap-2">
+            <li className="flex items-center gap-3">
               {store.signatureClient && store.signatureClient.startsWith('data:image') ? (
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <CheckCircle className="w-5 h-5 text-emerald-400 drop-shadow-sm" />
               ) : (
-                <div className="w-4 h-4 rounded-full border border-amber-400 bg-amber-400/20" />
+                <div className="w-5 h-5 rounded-full border border-amber-400 bg-amber-400/20" />
               )}
-              <span>Signature client : <strong className={store.signatureClient ? "text-emerald-400" : "text-amber-400"}>{store.signatureClient ? "Présente" : "Manquante (Optionnelle)"}</strong></span>
+              <span className="text-[15px]">Signature client : <strong className={store.signatureClient ? "text-emerald-400 ml-1" : "text-amber-400 ml-1"}>{store.signatureClient ? "Présente" : "Manquante (Optionnelle)"}</strong></span>
             </li>
-            <li className="flex items-center gap-2">
-              <CheckCircle className={store.photos && store.photos.length > 0 ? "w-4 h-4 text-emerald-400" : "w-4 h-4 text-slate-500"} />
-              <span>Photos jointes : <strong className="text-white">{store.photos ? store.photos.length : 0}</strong></span>
+            <li className="flex items-center gap-3">
+              <CheckCircle className={store.photos && store.photos.length > 0 ? "w-5 h-5 text-emerald-400 drop-shadow-sm" : "w-5 h-5 text-slate-500"} />
+              <span className="text-[15px]">Photos jointes : <strong className="text-white ml-1">{store.photos ? store.photos.length : 0} image(s)</strong></span>
             </li>
           </ul>
         </div>
