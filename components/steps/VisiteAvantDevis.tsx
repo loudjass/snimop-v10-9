@@ -20,15 +20,6 @@ export function VisiteAvantDevis() {
         <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
           Visite avant devis
         </h2>
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="bg-blue-500/10 border-blue-400/30 text-blue-300 hover:bg-blue-500/20"
-          onClick={() => (window as any).triggerSpecificPDF?.('visite')}
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export PDF Visite
-        </Button>
       </div>
       
       <div className="bg-[#0f172a]/70 backdrop-blur-2xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-700/50 flex flex-col gap-6">

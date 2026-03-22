@@ -207,16 +207,6 @@ export function Devis() {
         
         <div className="flex flex-wrap items-center gap-3">
           <Button 
-            variant="outline" 
-            size="sm"
-            className="bg-blue-500/10 border-blue-400/30 text-blue-300 hover:bg-blue-500/20 font-bold px-4 py-4 rounded-xl shadow-lg h-auto"
-            onClick={() => (window as any).triggerSpecificPDF?.('devis')}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            PDF Devis
-          </Button>
-
-          <Button 
             variant={store.devisModeRapide ? "default" : "outline"} 
             onClick={toggleModeRapide}
             className={`gap-2 font-bold px-4 py-4 rounded-xl shadow-lg transition-all ${store.devisModeRapide ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-none' : 'hover:bg-slate-800 text-slate-300 border-slate-600'}`}
