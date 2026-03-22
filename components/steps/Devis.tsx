@@ -10,6 +10,9 @@ import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
 export function Devis() {
   const store = useDossierStore();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isPricePulsing, setIsPricePulsing] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   useEffect(() => {
     const state = useDossierStore.getState();
@@ -17,8 +20,32 @@ export function Devis() {
       state.setField('descriptifTravaux', state.travauxPreconises || state.constat);
     }
     if (!state.devisMateriel && state.materielEnvisage) state.setField('devisMateriel', state.materielEnvisage);
+
+    // Dynamic Visibility on Scroll
+    const handleScroll = () => {
+      const shouldShow = window.scrollY > 120;
+      if (shouldShow !== isVisible) setIsVisible(shouldShow);
+    };
+
+    // Keyboard focus detection (Mobile)
+    const handleFocus = () => {
+      if (window.innerWidth < 768) setIsKeyboardOpen(true);
+    };
+    const handleBlur = () => {
+      setIsKeyboardOpen(false);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('focusin', handleFocus);
+    document.addEventListener('focusout', handleBlur);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('focusin', handleFocus);
+      document.removeEventListener('focusout', handleBlur);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isVisible]);
 
   const handleNext = () => store.setField('currentStep', 4);
   const handlePrev = () => store.setField('currentStep', 2);
@@ -62,6 +89,16 @@ export function Devis() {
   const totalTTC = prixRetenuHT + tva;
   
   const acompteCalcule = store.acompteDemande ? totalTTC * ((store.acomptePourcentage || 0) / 100) : 0;
+
+  // Visual Pulse on Price Change
+  // moved here to avoid "used before declaration" error
+  useEffect(() => {
+    if (totalTTC > 0) {
+      setIsPricePulsing(true);
+      const timer = setTimeout(() => setIsPricePulsing(false), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [totalTTC]);
 
   return (
     <div className="flex flex-col gap-5 py-3 pb-52 relative">
@@ -292,9 +329,9 @@ export function Devis() {
       </div>
 
       {/* ========================================================== */}
-      {/* BLOC FINAL STICKY BOTTOM (Responsive) */}
+      {/* BLOC FINAL STICKY BOTTOM (Responsive & Intelligent) */}
       {/* ========================================================== */}
-      <div className="fixed bottom-0 left-0 w-full z-50 pointer-events-none flex justify-center pb-safe px-2 md:px-0">
+      <div className={`fixed bottom-0 left-0 w-full z-50 pointer-events-none flex justify-center pb-safe px-2 md:px-0 transition-all duration-500 ease-in-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'} ${isKeyboardOpen ? 'scale-95 opacity-40 translate-y-4' : ''}`}>
         
         {/* MOBILE: PANNEAU SLIDE-UP DÉTAILS */}
         <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 md:hidden ${isPanelOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsPanelOpen(false)}>
@@ -396,10 +433,10 @@ export function Devis() {
             </div>
 
             {/* DROITE: TOTAL TTC (DOMINANT) */}
-            <div className="flex items-center gap-4 bg-blue-500/5 px-6 py-2 rounded-2xl border border-blue-500/20 shadow-inner">
+            <div className={`flex items-center gap-4 bg-blue-500/5 px-6 py-2 rounded-2xl border transition-all duration-300 ${isPricePulsing ? 'border-blue-400 scale-105 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.4)]' : 'border-blue-500/20 shadow-inner'}`}>
               <div className="flex flex-col items-end">
                 <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-0.5">TOTAL TTC</span>
-                <span className="text-4xl lg:text-5xl font-black text-white font-mono drop-shadow-[0_2px_10px_rgba(59,130,246,0.5)] leading-none">{totalTTC.toFixed(2)} €</span>
+                <span className={`text-4xl lg:text-5xl font-black text-white font-mono drop-shadow-[0_2px_10px_rgba(59,130,246,0.5)] leading-none transition-transform duration-300 ${isPricePulsing ? 'scale-110' : 'scale-100'}`}>{totalTTC.toFixed(2)} €</span>
               </div>
             </div>
 
@@ -409,11 +446,11 @@ export function Devis() {
         {/* PIED DE PAGE : VERSION MOBILE COMPACTE (Max 60px) */}
         <div 
           onClick={() => setIsPanelOpen(true)}
-          className="md:hidden w-full h-[60px] max-w-sm bg-slate-900 border-2 border-blue-500/40 rounded-full flex items-center justify-between px-6 shadow-[0_0_30px_rgba(59,130,246,0.3)] pointer-events-auto active:scale-95 transition-transform cursor-pointer backdrop-blur-3xl bg-opacity-95"
+          className={`md:hidden w-full h-[60px] max-w-sm bg-slate-900 border-2 border-blue-500/40 rounded-full flex items-center justify-between px-6 shadow-[0_0_30px_rgba(59,130,246,0.3)] pointer-events-auto active:scale-95 transition-all duration-300 cursor-pointer backdrop-blur-3xl bg-opacity-95 ${isPricePulsing ? 'scale-105 border-blue-400 shadow-[0_0_40px_rgba(59,130,246,0.5)]' : ''}`}
         >
           <div className="flex flex-col">
             <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] leading-tight">TOTAL TTC</span>
-            <span className="text-xl font-black text-white font-mono leading-none tracking-tight">{totalTTC.toFixed(2)} €</span>
+            <span className={`text-xl font-black text-white font-mono leading-none tracking-tight transition-transform duration-300 ${isPricePulsing ? 'scale-110' : ''}`}>{totalTTC.toFixed(2)} €</span>
           </div>
           <div className="bg-blue-500/20 p-1.5 rounded-full border border-blue-500/30">
             <ChevronUp className="w-5 h-5 text-blue-400 animate-bounce group-hover:animate-none" />
