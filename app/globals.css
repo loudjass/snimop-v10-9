@@ -24,3 +24,25 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Forçage d'un rendu propre et transparent pour le logo officiel */
+.logo-clean {
+  background: transparent !important;
+  mix-blend-mode: multiply !important;
+  filter: contrast(1.05) !important;
+}
+
+/* Traitement UI Premium pour le header (Lumineux, contrasté, glowing) */
+.logo-header {
+  background: transparent !important;
+  mix-blend-mode: normal !important;
+  /* Style plus sobre et premium, sans excès de halo fluo */
+  filter: brightness(1.1) contrast(1.05) saturate(1.05) drop-shadow(0 2px 6px rgba(59, 130, 246, 0.15)) !important;
+  opacity: 0.95;
+  transition: all 0.3s ease;
+}
+
+.logo-header:hover {
+  filter: brightness(1.15) contrast(1.1) saturate(1.1) drop-shadow(0 3px 12px rgba(59, 130, 246, 0.25)) !important;
+  opacity: 1;
+}

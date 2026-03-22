@@ -9,38 +9,36 @@ import jsPDF from 'jspdf';
 import { format, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+import { SNIMOP_LOGO_PATH } from '@/components/ui/SnimopLogo';
+
 // LOAD REAL PNG LOGO AVEC RATIO NATUREL
-const loadLogoBase64 = async (): Promise<{b64: string, ratio: number} | null> => {
+const loadLogoBase64 = async (): Promise<{img: HTMLImageElement, ratio: number} | null> => {
   try {
-    const res = await fetch('/snimop-logo.png');
-    if (!res.ok) {
-      console.error("ERREUR CRITIQUE: Le fichier officiel /snimop-logo.png est introuvable. Veuillez vérifier sa présence dans le dossier /public !");
-      return null;
-    }
-    const blob = await res.blob();
-    const b64 = await new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => {
-        console.error("ERREUR CRITIQUE: Le fichier /snimop-logo.png n'a pas pu être converti (corruption potentielle).");
-        resolve('');
-      };
-      reader.readAsDataURL(blob);
-    });
-    
-    if (!b64 || b64.length < 50) return null;
-    
     return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => resolve({ b64, ratio: img.width / img.height });
+      img.onload = () => resolve({ img, ratio: img.width / img.height });
       img.onerror = () => {
-         console.error("ERREUR CRITIQUE: Impossible de lire les dimensions de l'image pour le ratio.");
-         resolve({ b64, ratio: 3.5 }); // Fallback ratio large par défaut
+         console.error("ERREUR CRITIQUE: Impossible de lire les dimensions de l'image.");
+         resolve(null);
       };
-      img.src = b64;
+      img.src = SNIMOP_LOGO_PATH;
     });
   } catch (e) {
-    console.error("ERREUR CRITIQUE: Impossible de lire /snimop-logo.png", e);
+    console.error("ERREUR CRITIQUE: Impossible de lire le logo", e);
+    return null;
+  }
+};
+
+// LOAD REAL PNG MASCOTTE
+const loadMascotteBase64 = async (): Promise<{img: HTMLImageElement, ratio: number} | null> => {
+  try {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ img, ratio: img.width / img.height });
+      img.onerror = () => resolve(null);
+      img.src = '/snimop-mascote.png';
+    });
+  } catch (e) {
     return null;
   }
 };
@@ -67,6 +65,7 @@ export function ExportFinal() {
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const logoData = await loadLogoBase64();
+      const mascotteData = await loadMascotteBase64();
 
       // ==========================================
       // PAGE 1 : PAGE DE GARDE (PLUS PRO, MIEUX CENTRÉE)
@@ -76,12 +75,12 @@ export function ExportFinal() {
       
       let coverY = 25; // Centrage visuel parfait (remonté pour donner du souffle en bas)
       
-      if (logoData && logoData.b64) {
+      if (logoData && logoData.img) {
         // Agrandissement léger (+15%)
         const targetWidth = 125;
         const targetHeight = targetWidth / logoData.ratio; 
         const xCenter = (210 - targetWidth) / 2;
-        pdf.addImage(logoData.b64, 'PNG', xCenter, coverY, targetWidth, targetHeight, undefined, 'FAST');
+        pdf.addImage(logoData.img, 'PNG', xCenter, coverY, targetWidth, targetHeight);
         coverY += targetHeight + 15;
       } else {
         coverY += 30; // Skip space if no logo
@@ -140,16 +139,54 @@ export function ExportFinal() {
       const siteContent = `Site : ${store.site || 'Non renseigné'}\nAdresse : ${store.adresse || '-'}\nTechnicien assigné : ${store.technicien || '-'}`;
       pdf.text(pdf.splitTextToSize(siteContent, 140), 40, coverY + 18);
 
+      // WATERMARK MASCOTTE PAGE 1
+      if (mascotteData && mascotteData.img) {
+        try {
+          const markWidth = 140;
+          const markHeight = markWidth / mascotteData.ratio;
+          const markX = (210 - markWidth) / 2; // Centered
+          const markY = 297 - markHeight - 20; // Bottom 
+          
+          pdf.saveGraphicsState();
+          pdf.setGState(new (pdf as any).GState({ opacity: 0.06 }));
+          pdf.addImage(mascotteData.img, 'PNG', markX, markY, markWidth, markHeight);
+          pdf.restoreGraphicsState();
+        } catch(e) { console.error("Watermark error", e); }
+      }
+
       // ==========================================
       // EN-TÊTE INTÉRIEUR (COMPACT)
       // ==========================================
       const drawHeader = (pageContextPdf: jsPDF, pageTitle: string) => {
+        // Sécurité visuelle avant l'en-tête
+        pageContextPdf.setFillColor(255, 255, 255);
+        pageContextPdf.rect(0, 0, 210, 40, 'F');
+
         // Logo TOP LEFT (Respect Ratio)
-        if (logoData && logoData.b64) {
-          const targetWidth = 53; // Légèrement agrandi
-          const targetHeight = targetWidth / logoData.ratio;
-          // Ajuster Y pour le centrage vertical (si l'image n'est pas trop haute)
-          pageContextPdf.addImage(logoData.b64, 'PNG', 14, 10, targetWidth, targetHeight, undefined, 'FAST');
+        let lastLogoEndX = 14;
+        if (logoData && logoData.img) {
+          let targetWidth = 53; // Légèrement agrandi
+          let targetHeight = targetWidth / logoData.ratio;
+          // Sécurité anti-chevauchement si le logo s'avère haut
+          if (targetHeight > 25) {
+            targetHeight = 25;
+            targetWidth = targetHeight * logoData.ratio;
+          }
+          pageContextPdf.addImage(logoData.img, 'PNG', 14, 10, targetWidth, targetHeight);
+          lastLogoEndX = 14 + targetWidth;
+        }
+
+        // MASCOTTE HEADER (À côté du logo)
+        if (mascotteData && mascotteData.img) {
+          try {
+             // Hauteur alignée visuellement avec le logo (18mm par défaut)
+             const mHeight = 18;
+             const mWidth = mHeight * mascotteData.ratio;
+             pageContextPdf.saveGraphicsState();
+             pageContextPdf.setGState(new (pageContextPdf as any).GState({ opacity: 0.85 }));
+             pageContextPdf.addImage(mascotteData.img, 'PNG', lastLogoEndX + 8, 12, mWidth, mHeight);
+             pageContextPdf.restoreGraphicsState();
+          } catch(e) {}
         }
 
         // N° & Date TOP RIGHT

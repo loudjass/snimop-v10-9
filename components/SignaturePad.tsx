@@ -7,11 +7,14 @@ export function SignaturePad({ onSave, initialDataUrl }: { onSave: (url: string)
   const sigPad = useRef<any>(null);
   const [isEmpty, setIsEmpty] = useState(true);
 
+  const initialized = useRef(false);
+
   // Initialize
   useEffect(() => {
-    if (initialDataUrl && sigPad.current) {
+    if (initialDataUrl && sigPad.current && !initialized.current) {
       sigPad.current.fromDataURL(initialDataUrl);
       setIsEmpty(false);
+      initialized.current = true;
     }
   }, [initialDataUrl]);
 
@@ -26,7 +29,8 @@ export function SignaturePad({ onSave, initialDataUrl }: { onSave: (url: string)
       setIsEmpty(true);
       onSave("");
     } else {
-      const url = sigPad.current?.getTrimmedCanvas().toDataURL('image/png');
+      // Use getCanvas() to maintain original size and avoid artificial scaling
+      const url = sigPad.current?.getCanvas().toDataURL('image/png');
       setIsEmpty(false);
       onSave(url);
     }
@@ -34,11 +38,11 @@ export function SignaturePad({ onSave, initialDataUrl }: { onSave: (url: string)
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      <div className="border-2 border-dashed border-gray-300 rounded-md bg-white overflow-hidden" style={{ height: 200 }}>
+      <div className="border-2 border-dashed border-gray-300 rounded-md bg-white overflow-hidden" style={{ height: 200, touchAction: 'none' }}>
         <SignatureCanvas 
           ref={sigPad}
           penColor="black"
-          canvasProps={{ className: "w-full h-full cursor-crosshair" }}
+          canvasProps={{ className: "w-full h-full cursor-crosshair", style: { touchAction: 'none' } }}
           onEnd={save}
         />
       </div>

@@ -3,24 +3,31 @@ import React from 'react';
 import { useDossierStore } from '@/store/useDossierStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { SnimopLogo } from '@/components/ui/SnimopLogo';
 
 export function DocumentTemplate() {
   const store = useDossierStore();
   
   // Choose what to render based on store.typeDoc
   return (
-    <div className="bg-white p-8 font-sans text-gray-900 w-[800px] min-h-[1100px] shadow-sm mb-4" id="pdf-content">
-      {/* Header SNIMOP */}
-      <div className="flex justify-between border-b-2 border-blue-900 pb-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-black text-blue-900 tracking-tighter">SNIMOP</h1>
-          <p className="text-sm text-gray-500">Mécanique - Maintenance Industrielle</p>
-        </div>
-        <div className="text-right text-sm">
-          <p className="font-bold">Dossier N° {store.numeroAffaire}</p>
-          <p>Le {store.date ? format(new Date(store.date), 'dd MMMM yyyy', { locale: fr }) : ''}</p>
-        </div>
+    <div className="bg-white p-8 font-sans text-gray-900 w-[800px] min-h-[1100px] shadow-sm mb-4 relative overflow-hidden" id="pdf-content">
+      {/* Watermark in preview */}
+      <div className="absolute inset-x-0 bottom-20 z-0 pointer-events-none flex justify-center opacity-[0.04]">
+        <img src="/snimop-mascote.png" alt="" className="w-96 object-contain" />
       </div>
+
+      <div className="relative z-10">
+        {/* Header SNIMOP */}
+        <div className="flex justify-between items-end border-b-2 border-blue-900 pb-4 mb-6">
+          <div className="flex items-center gap-6 bg-transparent">
+            <SnimopLogo className="w-40" />
+            <img src="/snimop-mascote.png" alt="" className="h-10 w-auto object-contain opacity-80" />
+          </div>
+          <div className="text-right text-sm">
+            <p className="font-bold">Dossier N° {store.numeroAffaire}</p>
+            <p>Le {store.date ? format(new Date(store.date), 'dd MMMM yyyy', { locale: fr }) : ''}</p>
+          </div>
+        </div>
 
       {/* Document Title */}
       <div className="text-center mb-8 bg-blue-50 py-3 rounded-sm border border-blue-100">
@@ -114,11 +121,12 @@ export function DocumentTemplate() {
           <p className="font-bold text-sm mb-1 text-gray-700">Signature Client</p>
           <p className="text-xs text-gray-500 mb-2">Nom : {store.nomSignataireClient || store.contact || store.client}</p>
           {store.signatureClient ? (
-            <img src={store.signatureClient} alt="Signature" className="max-h-32 object-contain mix-blend-multiply" />
+            <img src={store.signatureClient} alt="" className="max-h-32 object-contain mix-blend-multiply" />
           ) : (
             <div className="flex-1 flex items-center justify-center text-gray-300 italic">Signature absente</div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

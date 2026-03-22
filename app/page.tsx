@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useDossierStore } from '@/store/useDossierStore';
+import { SnimopLogo } from '@/components/ui/SnimopLogo';
 import { Accueil } from '@/components/steps/Accueil';
 import { InformationsGenerales } from '@/components/steps/InformationsGenerales';
 import { VisiteAvantDevis } from '@/components/steps/VisiteAvantDevis';
@@ -9,7 +10,7 @@ import { Devis } from '@/components/steps/Devis';
 import { BonIntervention } from '@/components/steps/BonIntervention';
 import { RapportIntervention } from '@/components/steps/RapportIntervention';
 import { ExportFinal } from '@/components/steps/ExportFinal';
-import { ClipboardList, ClipboardSignature, Wrench, HardHat, FileText, CheckCircle2 } from 'lucide-react';
+import { ClipboardList, ClipboardSignature, Wrench, HardHat, FileText, CheckCircle2, Home as HomeIcon } from 'lucide-react';
 
 const steps = [
   { id: 1, title: 'Infos', icon: <ClipboardList className="w-5 h-5" /> },
@@ -56,9 +57,27 @@ export default function Home() {
       <div className="fixed inset-0 z-0 bg-[#070b14]/80 backdrop-blur-sm" />
 
       <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Header premium avec logo SNIMOP principal (PNG Transparent, +35% taille) */}
-        <header className="bg-slate-900/60 backdrop-blur-xl border-b border-white/5 p-3 sticky top-0 z-50 shadow-2xl flex items-center justify-center min-h-[76px]">
-          <img src="/snimop-logo.png" alt="" className="w-[180px] md:w-[220px] h-auto object-contain drop-shadow-lg" />
+        {/* Header premium avec logo SNIMOP principal */}
+        <header className="bg-slate-900/60 backdrop-blur-xl border-b border-white/5 p-4 sticky top-0 z-50 flex items-center min-h-[76px] px-6">
+          <div className="flex-1 flex justify-start">
+            {currentStep > 0 && (
+              <button 
+                onClick={() => setField('currentStep', 0)}
+                className="flex items-center justify-center p-2.5 rounded-full bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-sm border border-white/5"
+                title="Retour à l'accueil"
+              >
+                <HomeIcon className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          <SnimopLogo useGradient className="w-[160px] md:w-[200px] h-[35px] md:h-[45px] mx-auto flex-shrink-0" />
+          <div className="flex-1 flex justify-end">
+            <img 
+              src="/snimop-mascote.png" 
+              alt="" 
+              className="h-10 w-auto object-contain opacity-90 transition-all hover:scale-105 hover:opacity-100" 
+            />
+          </div>
         </header>
 
         {/* Stepper Premium */}

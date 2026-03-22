@@ -29,18 +29,14 @@ export function Accueil() {
           {/* Badge de contenant pour fondre le beige */}
           <div className="relative z-10 w-56 h-56 rounded-full bg-gradient-to-br from-[#FAFAF8] to-[#EFECE5] shadow-[0_0_40px_rgba(0,0,0,0.5)] ring-4 ring-white/10 flex items-center justify-center overflow-hidden">
             <img 
-              src="/snimop-mascotte.png" 
+              src="/snimop-mascote.png" 
               alt="" 
               className="w-full h-full object-cover mix-blend-multiply scale-105"
             />
           </div>
         </div>
 
-        {/* Logo Officiel SNIMOP pur Image */}
-        <div className="flex justify-center mb-6">
-          <img src="/snimop-logo.png" alt="" className="w-[280px] md:w-[350px] h-auto object-contain drop-shadow-2xl" />
-        </div>
-        
+
         <p className="text-slate-300 max-w-sm text-lg font-medium leading-relaxed px-4 mt-2">
           Génération et gestion des documents d&apos;intervention sur chantier.
         </p>
