@@ -1,5 +1,5 @@
 "use client";
-// [2026-03-22] Vercel redeploy trigger for SNIMOP V10.9 branding
+// [2026-03-22] Vercel redeploy trigger for SNIMOP V10.9 branding ok
 
 import { useDossierStore } from '@/store/useDossierStore';
 import { SnimopLogo } from '@/components/ui/SnimopLogo';
@@ -40,9 +40,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen text-slate-100 pb-20 relative font-sans">
-      
+
       {/* Background global industriel profond avec overlay */}
-      <div 
+      <div
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-slate-950"
         style={{ backgroundImage: "url('/snimop-bg.jpg')" }}
       />
@@ -54,7 +54,7 @@ export default function Home() {
         <header className="bg-slate-900/60 backdrop-blur-xl border-b border-white/5 p-4 sticky top-0 z-50 flex items-center min-h-[76px] px-6">
           <div className="flex-1 flex justify-start">
             {currentStep > 0 && (
-              <button 
+              <button
                 onClick={() => setField('currentStep', 0)}
                 className="flex items-center justify-center p-2.5 rounded-full bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-sm border border-white/5"
                 title="Retour à l'accueil"
@@ -65,10 +65,10 @@ export default function Home() {
           </div>
           <SnimopLogo useGradient className="w-[160px] md:w-[200px] h-[35px] md:h-[45px] mx-auto flex-shrink-0" />
           <div className="flex-1 flex justify-end">
-            <img 
-              src="/snimop-mascote.png" 
-              alt="" 
-              className="h-10 w-auto object-contain opacity-90 transition-all hover:scale-105 hover:opacity-100" 
+            <img
+              src="/snimop-mascote.png"
+              alt=""
+              className="h-10 w-auto object-contain opacity-90 transition-all hover:scale-105 hover:opacity-100"
             />
           </div>
         </header>
@@ -80,14 +80,12 @@ export default function Home() {
               {steps.map((step, idx) => (
                 <div key={step.id} className="flex items-center flex-1">
                   <div
-                    className={`flex flex-col items-center justify-center cursor-pointer transition-all duration-300 w-full ${
-                      currentStep === step.id ? 'text-blue-400 scale-110' : currentStep > step.id ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-400'
-                    }`}
+                    className={`flex flex-col items-center justify-center cursor-pointer transition-all duration-300 w-full ${currentStep === step.id ? 'text-blue-400 scale-110' : currentStep > step.id ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-400'
+                      }`}
                     onClick={() => setField('currentStep', step.id)}
                   >
-                    <div className={`p-2.5 rounded-full mb-1 flex items-center justify-center shadow-inner transition-colors ${
-                      currentStep === step.id ? 'bg-blue-500/20 ring-1 ring-blue-400/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : currentStep > step.id ? 'bg-emerald-500/10' : 'bg-slate-800/40'
-                    }`}>
+                    <div className={`p-2.5 rounded-full mb-1 flex items-center justify-center shadow-inner transition-colors ${currentStep === step.id ? 'bg-blue-500/20 ring-1 ring-blue-400/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : currentStep > step.id ? 'bg-emerald-500/10' : 'bg-slate-800/40'
+                      }`}>
                       {step.icon}
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-widest">{step.title}</span>
