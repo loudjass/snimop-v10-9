@@ -43,6 +43,21 @@ const loadMascotteBase64 = async (): Promise<{img: HTMLImageElement, ratio: numb
   }
 };
 
+// HELPER FOR PHOTOS
+const loadPhotoBase64 = async (base64: string): Promise<{img: HTMLImageElement, ratio: number} | null> => {
+  if (!base64 || !base64.startsWith('data:image')) return null;
+  try {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ img, ratio: img.width / img.height });
+      img.onerror = () => resolve(null);
+      img.src = base64;
+    });
+  } catch (e) {
+    return null;
+  }
+};
+
 export function ExportFinal() {
   const store = useDossierStore();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -208,6 +223,21 @@ export function ExportFinal() {
         pageContextPdf.setDrawColor(200, 200, 200);
         pageContextPdf.setLineWidth(0.3);
         pageContextPdf.line(14, 48, 196, 48);
+
+        // --- FILIGRANE MASCOTTE SUR TOUTES LES PAGES ---
+        if (mascotteData && mascotteData.img) {
+          try {
+            const markWidth = 120;
+            const markHeight = markWidth / mascotteData.ratio;
+            const markX = (210 - markWidth) / 2;
+            const markY = (297 - markHeight) / 2 + 10;
+            
+            pageContextPdf.saveGraphicsState();
+            pageContextPdf.setGState(new (pageContextPdf as any).GState({ opacity: 0.04 }));
+            pageContextPdf.addImage(mascotteData.img, 'PNG', markX, markY, markWidth, markHeight);
+            pageContextPdf.restoreGraphicsState();
+          } catch(e) {}
+        }
         
         return 58; // Breathing room de départ au lieu de 48
       };
@@ -254,6 +284,57 @@ export function ExportFinal() {
         return localY + (lines.length * 6) + 16; // breathing room
       };
 
+      // HELPER POUR LES PHOTOS PAR SECTION
+      const drawSectionPhotos = async (types: string[]) => {
+        const filtered = store.photos.filter(p => types.includes(p.type)).slice(0, 2);
+        if (filtered.length === 0) return;
+
+        // Vérifier l'espace restant
+        if (y > 200) {
+          pdf.addPage();
+          y = drawHeader(pdf, "PHOTOS ILLUSTRATIVES");
+        } else {
+          y += 5;
+        }
+
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(100, 100, 100);
+        pdf.text("PHOTOS RELATIVE À CETTE SECTION :", 14, y);
+        y += 8;
+
+        const photoWidth = 85;
+        const photoHeight = 60;
+        const gap = 10;
+
+        for (let i = 0; i < filtered.length; i++) {
+          const photo = filtered[i];
+          const photoData = await loadPhotoBase64(photo.imageBase64);
+          if (photoData) {
+            const x = 14 + (i % 2) * (photoWidth + gap);
+            const currentY = y;
+
+            // Cadre pro
+            pdf.setDrawColor(220, 220, 220);
+            pdf.setLineWidth(0.5);
+            pdf.rect(x - 2, currentY - 2, photoWidth + 4, photoHeight + 12, 'S');
+
+            // Image
+            pdf.addImage(photoData.img, 'JPEG', x, currentY, photoWidth, photoHeight);
+            
+            // Légende
+            pdf.setFontSize(9);
+            pdf.setFont("helvetica", "italic");
+            pdf.setTextColor(80, 80, 80);
+            const title = photo.title || "Illustration sans titre";
+            const lines = pdf.splitTextToSize(title, photoWidth);
+            pdf.text(lines, x, currentY + photoHeight + 6);
+          }
+        }
+        
+        y += photoHeight + 25;
+      };
+
       // PAGE 2
       pdf.addPage();
       y = drawHeader(pdf, "INFORMATIONS GÉNÉRALES SNIMOP");
@@ -279,6 +360,7 @@ export function ExportFinal() {
       y = Math.max(yL, yR);
       y = addSection("Option nacelle", store.optionNacelle);
       y = addSection("Remarques", store.remarques);
+      await drawSectionPhotos(['Avant']);
 
       // PAGE 4
       pdf.addPage();
@@ -322,6 +404,7 @@ export function ExportFinal() {
       y = addSection("Nature des travaux à réaliser", store.natureTravaux);
       y = addSection("Matériel nécessaire", store.materielPrevu); 
       y = addSection("Consignes et Remarques", store.consignes);
+      await drawSectionPhotos(['Avant', 'Pendant']);
 
       // PAGE 6
       pdf.addPage();
@@ -335,6 +418,7 @@ export function ExportFinal() {
       y = Math.max(yL, yR);
       y = addSection("Réserves", store.rapportReserves);
       y = addSection("Observations finales", store.observationsFinales);
+      await drawSectionPhotos(['Pendant', 'Après', 'Plan', 'Autre']);
 
       // PAGE 7
       pdf.addPage();
