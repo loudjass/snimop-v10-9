@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from 'react';
 import { useDossierStore } from '@/store/useDossierStore';
 import { SnimopLogo } from '@/components/ui/SnimopLogo';
 import { Accueil } from '@/components/steps/Accueil';
@@ -24,13 +23,6 @@ const steps = [
 export default function Home() {
   const currentStep = useDossierStore((state) => state.currentStep);
   const setField = useDossierStore((state) => state.setField);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Chargement...</div>;
 
   const renderStep = () => {
     switch (currentStep) {
