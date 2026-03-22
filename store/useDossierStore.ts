@@ -57,6 +57,23 @@ export interface DossierData {
   delai: string;
   bonPourAccord: boolean;
 
+  // --- NOUVEAUX CHAMPS CHIFFRAGE DEVIS ---
+  prestationType: string; // 'fourniture_pose' | 'fourniture' | 'pose'
+  coutMaterielHT: number;
+  tauxHoraireMO: number;
+  heuresMO: number;
+  coutDeplacementHT: number;
+  nacelleActive: boolean;
+  coutNacelleHT: number;
+  autresFraisHT: number;
+  margePourcentage: number;
+  tvaPourcentage: number;
+  prixFinalManuel: number | null; 
+  ajustementManuel: number;
+  acompteDemande: boolean;
+  acomptePourcentage: number;
+  // ---------------------------------------
+
   dateIntervention: string;
   materielPrevu: string;
   natureTravaux: string;
@@ -127,6 +144,21 @@ const initialDossierData: Omit<DossierData, 'id' | 'updatedAt' | 'numeroAffaire'
   conditionsReglement: 'Règlement à réception de facture',
   delai: '',
   bonPourAccord: false,
+
+  prestationType: 'fourniture_pose',
+  coutMaterielHT: 0,
+  tauxHoraireMO: 65, // Standard rate
+  heuresMO: 0,
+  coutDeplacementHT: 0,
+  nacelleActive: false,
+  coutNacelleHT: 0,
+  autresFraisHT: 0,
+  margePourcentage: 30, // 30% default margin
+  tvaPourcentage: 20, // 20% default TVA
+  prixFinalManuel: null,
+  ajustementManuel: 0,
+  acompteDemande: false,
+  acomptePourcentage: 30, // 30% default acompte
 
   dateIntervention: '',
   materielPrevu: '',

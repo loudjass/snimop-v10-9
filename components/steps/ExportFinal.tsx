@@ -360,38 +360,102 @@ export function ExportFinal() {
 
       // PAGE 4
       pdf.addPage();
-      y = drawHeader(pdf, "DEVIS SNIMOP");
+      const prestationStr = store.prestationType ? store.prestationType.replace('_', ' + ').toUpperCase() : 'NON DÉFINI';
+      y = drawHeader(pdf, `DEVIS SNIMOP - ${prestationStr}`);
       y = addSection("Descriptif des travaux", store.descriptifTravaux);
-      y = addSection("Matériel nécessaire", store.devisMateriel);
-      yTopLine = y;
-      yL = addSectionAt("Main d'œuvre", store.devisMo, 14, yTopLine, true);
-      yR = addSectionAt("Déplacement", store.devisDeplacement, 110, yTopLine, true);
-      y = Math.max(yL, yR);
-      y = addSection("Options (Nacelle, etc.)", store.devisOptions);
+      y = addSection("Matériel prévu", store.devisMateriel);
       y = addSection("Réserves / Exclusions", store.reserves);
-      
-      if (y > 220) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
-      y += 5;
-      pdf.setFillColor(248, 250, 252);
-      pdf.setDrawColor(226, 232, 240);
-      pdf.setLineWidth(0.5);
-      pdf.roundedRect(14, y, 182, 35, 3, 3, 'FD');
-      y += 12;
+
+      // Moteur de calcul PDF
+      const totalMoHT = (store.tauxHoraireMO || 0) * (store.heuresMO || 0);
+      const totalNacelleHT = store.nacelleActive ? (store.coutNacelleHT || 0) : 0;
+      const coutTotalHT = (store.coutMaterielHT || 0) + totalMoHT + (store.coutDeplacementHT || 0) + totalNacelleHT + (store.autresFraisHT || 0);
+      const margeEuros = coutTotalHT * ((store.margePourcentage || 0) / 100);
+      const prixConseilleHT = coutTotalHT + margeEuros;
+
+      const isEcrasementTotal = store.prixFinalManuel !== null && store.prixFinalManuel !== undefined && String(store.prixFinalManuel) !== '';
+      const prixRetenuHT = isEcrasementTotal ? Number(store.prixFinalManuel) : prixConseilleHT + (store.ajustementManuel || 0);
+      const tva = prixRetenuHT * ((store.tvaPourcentage || 0) / 100);
+      const totalTTC = prixRetenuHT + tva;
+      const acompteCalcule = store.acompteDemande ? totalTTC * ((store.acomptePourcentage || 0) / 100) : 0;
+
+      // Vérification espace (nécessite ~65mm)
+      if (y > 215) { pdf.addPage(); y = drawHeader(pdf, `DEVIS SNIMOP - ${prestationStr} (Suite)`); }
+      else { y += 5; }
+
+      // BLOC FINANCIER
+      pdf.setFillColor(250, 252, 255);
+      pdf.setDrawColor(30, 58, 138); 
+      pdf.setLineWidth(0.4);
+      pdf.roundedRect(14, y, 182, 65, 3, 3, 'FD'); 
+
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(30, 58, 138);
-      pdf.text("CONDITIONS FINANCIÈRES :", 20, y);
-      y += 10;
-      pdf.setFontSize(11);
+      pdf.text("RÉCAPITULATIF FINANCIER", 20, y + 8);
+      
+      let fY = y + 16;
+      pdf.setFontSize(10);
       pdf.setTextColor(60, 60, 60);
-      pdf.text("Règlement :", 20, y);
+
+      // Left Column (Base calculation)
       pdf.setFont("helvetica", "normal");
-      pdf.text(store.conditionsReglement || 'Non renseigné', 45, y);
-      y += 8;
+      pdf.text(`Coût matériel estimé : ${store.coutMaterielHT?.toFixed(2) || '0.00'} €`, 20, fY);
+      pdf.text(`Main d'œuvre (${store.heuresMO || 0}h) : ${totalMoHT.toFixed(2)} €`, 20, fY + 6);
+      pdf.text(`Déplacement : ${store.coutDeplacementHT?.toFixed(2) || '0.00'} €`, 20, fY + 12);
+      if (store.nacelleActive) {
+        pdf.text(`Option Nacelle : ${store.coutNacelleHT?.toFixed(2) || '0.00'} €`, 20, fY + 18);
+      }
+      if (store.autresFraisHT) {
+        let yAutre = store.nacelleActive ? fY + 24 : fY + 18;
+        pdf.text(`Autres frais : ${store.autresFraisHT.toFixed(2)} €`, 20, yAutre);
+      }
+      
+      // Right Column (Totals)
       pdf.setFont("helvetica", "bold");
-      pdf.text("Délai :", 20, y);
+      pdf.text(`PRIX TOTAL HT :`, 110, fY + 6);
+      pdf.text(`${prixRetenuHT.toFixed(2)} €`, 180, fY + 6, { align: 'right' });
+
       pdf.setFont("helvetica", "normal");
-      pdf.text(store.delai || 'Non renseigné', 35, y);
+      pdf.text(`TVA (${store.tvaPourcentage || 0}%) :`, 110, fY + 12);
+      pdf.text(`${tva.toFixed(2)} €`, 180, fY + 12, { align: 'right' });
+
+      // TTC Bar
+      pdf.setFillColor(30, 58, 138);
+      pdf.rect(105, fY + 16, 85, 10, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text(`TOTAL TTC :`, 110, fY + 23);
+      pdf.text(`${totalTTC.toFixed(2)} €`, 180, fY + 23, { align: 'right' });
+
+      // Acompte
+      if (store.acompteDemande) {
+        pdf.setTextColor(30, 58, 138);
+        pdf.setFontSize(10);
+        pdf.text(`Acompte à la commande (${store.acomptePourcentage || 0}%) : ${acompteCalcule.toFixed(2)} € TTC`, 180, fY + 34, { align: 'right' });
+      }
+
+      y += 75;
+
+      // Vérification espace conditions
+      if (y > 250) { pdf.addPage(); y = drawHeader(pdf, `DEVIS SNIMOP - CONDITIONS`); }
+      else { y += 2; }
+
+      // Conditions
+      pdf.setFontSize(10);
+      pdf.setTextColor(60, 60, 60);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Conditions de règlement :", 14, y);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(store.conditionsReglement || 'Non renseigné', 65, y);
+      
+      y += 6;
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Délai de réalisation :", 14, y);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(store.delai || 'Non renseigné', 55, y);
+
       y += 10;
       addStepSignature('devis', "DEVIS");
 
