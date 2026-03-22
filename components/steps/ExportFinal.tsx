@@ -428,94 +428,102 @@ export function ExportFinal() {
       }
 
       // ==========================================
-      // PAGE PHOTOS (ANNEXE) - OPTIMISÉ 2 PER PAGE AVEC METADATA
+      // PAGE PHOTOS (ANNEXE) - DYNAMIQUE AVEC GESTION DE BLOCS
       // ==========================================
       if (validPhotos.length > 0) {
-        let chunkedPhotos: {img: HTMLImageElement, ratio: number, type: string, title: string, timestamp: string}[][] = [];
-        for (let i = 0; i < validPhotos.length; i += 2) {
-          chunkedPhotos.push(validPhotos.slice(i, i + 2));
-        }
-
-        for (let pageIdx = 0; pageIdx < chunkedPhotos.length; pageIdx++) {
+        let isFirstPhotoPage = true;
+        let currentY = 0;
+        
+        const startNewPhotoPage = (isFirst: boolean) => {
           pdf.addPage();
-          const title = pageIdx === 0 ? "ANNEXE PHOTOS" : "ANNEXE PHOTOS (Suite)";
-          let currentPhotoY = drawHeader(pdf, title) + 15;
-          const pagePhotos = chunkedPhotos[pageIdx];
+          const title = isFirst ? "ANNEXE PHOTOS" : "ANNEXE PHOTOS (Suite)";
+          return drawHeader(pdf, title) + 12; // Base Y after header
+        };
 
-          if (pagePhotos.length === 1) {
-            // 1 Photo unique : Grande et centrée
-            const p = pagePhotos[0];
-            const maxW = 160;
-            const maxH = 175;
-            let drawW = maxW;
-            let drawH = drawW / p.ratio;
+        currentY = startNewPhotoPage(isFirstPhotoPage);
+        isFirstPhotoPage = false;
 
-            if (drawH > maxH) {
-              drawH = maxH;
-              drawW = drawH * p.ratio;
-            }
+        for (let i = 0; i < validPhotos.length; i++) {
+          const p = validPhotos[i];
+          const typeStr = `Type : ${p.type}`;
+          const dateStr = p.timestamp ? `Date : ${new Date(p.timestamp).toLocaleString('fr-FR')}` : '';
+          const titleStr = p.title || '';
 
-            const drawX = 14 + (182 - drawW) / 2;
-            try {
-              pdf.addImage(p.img, 'JPEG', drawX, currentPhotoY, drawW, drawH);
-              pdf.setDrawColor(200, 200, 200);
-              pdf.setLineWidth(0.5);
-              pdf.rect(drawX, currentPhotoY, drawW, drawH);
-              
-              const metaY = currentPhotoY + drawH + 8;
-              pdf.setFontSize(10);
-              pdf.setTextColor(50, 50, 50);
-              pdf.setFont("helvetica", "bold");
-              pdf.text(`Type : ${p.type}`, drawX, metaY);
-              if (p.timestamp) {
-                const dateStr = new Date(p.timestamp).toLocaleString('fr-FR');
-                pdf.text(`Date : ${dateStr}`, drawX + drawW, metaY, { align: 'right' });
-              }
-              if (p.title) {
-                pdf.setFont("helvetica", "normal");
-                pdf.text(p.title, drawX, metaY + 5);
-              }
-            } catch(e) { console.error("Could not add image to PDF", e); }
-          } else {
-            // 2 Photos maxi : Proprement réparties
-            const maxW = 150;
-            const maxH = 90; 
-            
-            for (let i = 0; i < pagePhotos.length; i++) {
-              const p = pagePhotos[i];
-              let drawW = maxW;
-              let drawH = drawW / p.ratio;
-
-              if (drawH > maxH) {
-                drawH = maxH;
-                drawW = drawH * p.ratio;
-              }
-
-              const drawX = 14 + (182 - drawW) / 2;
-              try {
-                pdf.addImage(p.img, 'JPEG', drawX, currentPhotoY, drawW, drawH);
-                pdf.setDrawColor(200, 200, 200);
-                pdf.setLineWidth(0.5);
-                pdf.rect(drawX, currentPhotoY, drawW, drawH);
-                
-                const metaY = currentPhotoY + drawH + 6;
-                pdf.setFontSize(10);
-                pdf.setTextColor(50, 50, 50);
-                pdf.setFont("helvetica", "bold");
-                pdf.text(`Type : ${p.type}`, drawX, metaY);
-                if (p.timestamp) {
-                  const dateStr = new Date(p.timestamp).toLocaleString('fr-FR');
-                  pdf.text(`Date : ${dateStr}`, drawX + drawW, metaY, { align: 'right' });
-                }
-                if (p.title) {
-                  pdf.setFont("helvetica", "normal");
-                  pdf.text(p.title, drawX, metaY + 5);
-                }
-              } catch(e) { console.error("Could not add image to PDF", e); }
-
-              currentPhotoY += drawH + 20; // Espace inter-photos propre
-            }
+          // 1. Calculs de l'image
+          const maxImageH = 100; // Hauteur max stricte pour permettre 2 photos si peu de texte
+          let imgW = 150; // Largeur de base
+          let imgH = imgW / p.ratio;
+          
+          if (imgH > maxImageH) {
+            imgH = maxImageH;
+            imgW = imgH * p.ratio;
           }
+
+          // 2. Calculs du texte descriptif
+          pdf.setFontSize(10);
+          pdf.setFont("helvetica", "normal");
+          
+          const maxTextW = 160; 
+          let titleLines: string[] = [];
+          if (titleStr) {
+            titleLines = pdf.splitTextToSize(titleStr, maxTextW - 10); // padding interne x2
+          }
+          
+          // Hauteur de la ligne de base (Type + Date) = 10
+          // Si titre : 10 + 2 (gap) + (lines * 5) + 3 (padding bas)
+          const textContainerHeight = titleLines.length > 0 ? 15 + (titleLines.length * 5) : 10;
+          
+          const blockGap = 15;
+          const blockTotalHeight = imgH + 4 + textContainerHeight + blockGap;
+
+          // 3. Vérification de l'espace disponible (Page A4 = 297mm, on laisse 15mm de marge basse = 282 max)
+          if (currentY + blockTotalHeight > 282) {
+            currentY = startNewPhotoPage(false);
+          }
+
+          const drawXImage = 14 + (182 - imgW) / 2; // Centré
+          const drawXText = 14 + (182 - maxTextW) / 2; // Centré
+
+          // ==========================================
+          // RENDU VISUEL DU BLOC (Indivisible)
+          // ==========================================
+          
+          // A. L'image
+          try {
+            pdf.addImage(p.img, 'JPEG', drawXImage, currentY, imgW, imgH);
+            pdf.setDrawColor(200, 200, 200);
+            pdf.setLineWidth(0.3);
+            pdf.rect(drawXImage, currentY, imgW, imgH);
+          } catch(e) { console.error("Could not add image", e); }
+
+          // B. Le cadre de texte (Premium container)
+          const textY = currentY + imgH + 4;
+          pdf.setFillColor(250, 251, 255);
+          pdf.setDrawColor(220, 225, 235);
+          pdf.setLineWidth(0.3);
+          pdf.roundedRect(drawXText, textY, maxTextW, textContainerHeight, 2, 2, 'FD');
+
+          // C. Métadonnées (Type & Date)
+          pdf.setFontSize(10);
+          pdf.setTextColor(30, 58, 138); // Bleu SNIMOP
+          pdf.setFont("helvetica", "bold");
+          pdf.text(typeStr, drawXText + 5, textY + 6);
+          
+          if (dateStr) {
+            pdf.setFont("helvetica", "italic");
+            pdf.setTextColor(120, 120, 120);
+            pdf.text(dateStr, drawXText + maxTextW - 5, textY + 6, { align: 'right' });
+          }
+
+          // D. Description
+          if (titleLines.length > 0) {
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(60, 60, 60);
+            pdf.text(titleLines, drawXText + 5, textY + 13);
+          }
+
+          // E. Avancer Y pour le bloc suivant
+          currentY += imgH + 4 + textContainerHeight + blockGap;
         }
       }
 
