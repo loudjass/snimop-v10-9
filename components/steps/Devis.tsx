@@ -133,11 +133,18 @@ export function Devis() {
 
       {/* RÉSUMÉ RAPIDE TERRAIN (Seulement si Mode Client est inactif) */}
       {!store.devisModeClient && (
-        <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-5 shadow-sm flex flex-col gap-3">
-          <h3 className="text-base font-black text-slate-300 flex items-center gap-2 border-b border-slate-700/50 pb-2 uppercase tracking-wider">
-            <Eye className="w-4 h-4 text-blue-400" /> Résumé Rapide
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-1">
+        <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-5 shadow-xl flex flex-col gap-3">
+          <div className="flex justify-between items-center border-b border-slate-700/50 pb-2">
+            <h3 className="text-base font-black text-slate-300 flex items-center gap-2 uppercase tracking-wider">
+              <Eye className="w-4 h-4 text-blue-400" /> Résumé Rapide
+            </h3>
+            {/* INDICATEUR DE MARGE RAPIDE */}
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-tighter shadow-sm transition-all ${margeBg} ${margeColor}`}>
+              <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+              {margeText} ({store.margePourcentage || 0}%)
+            </div>
+          </div>
+          <div className={`grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-1 transition-all`}>
             <div className="flex flex-col gap-0.5">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prestation</span>
               <span className="font-black text-blue-300 capitalize text-sm md:text-base leading-tight truncate">{store.prestationType?.replace('_', ' + ') || 'Non défini'}</span>
@@ -154,22 +161,22 @@ export function Devis() {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bénéfice</span>
               <span className={`font-black text-sm md:text-base leading-tight ${margeColor}`}>{margeEuros.toFixed(2)} €</span>
             </div>
-            <div className="flex flex-col gap-0.5 col-span-2 md:col-span-4 lg:col-span-1 bg-blue-500/10 rounded-lg border border-blue-500/20 px-3 py-1 items-center justify-center">
+            <div className="flex flex-col gap-0.5 col-span-2 md:col-span-4 lg:col-span-1 bg-blue-600/20 rounded-xl border border-blue-400/50 px-3 py-2 items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.2)]">
               <span className="text-[10px] font-black text-blue-300 uppercase tracking-widest">Prix Vente TTC</span>
-              <span className="font-black text-white text-lg md:text-xl drop-shadow-md leading-none">{totalTTC.toFixed(2)} €</span>
+              <span className={`font-black text-white text-3xl md:text-4xl drop-shadow-md leading-none transition-transform duration-300 ${isPricePulsing ? 'scale-110' : ''}`}>{totalTTC.toFixed(2)} €</span>
             </div>
           </div>
         </div>
       )}
       
       {/* PARAMÈTRES PRESTATION */}
-      {!store.devisModeRapide && (
-        <div className="bg-[#0f172a]/70 p-5 md:p-6 rounded-2xl shadow-sm border border-slate-700/50 flex flex-col gap-5">
-          <h3 className="text-lg font-bold text-indigo-300 border-b border-slate-700/50 pb-2 flex items-center gap-2">
-            <Settings2 className="w-5 h-5" /> 1. Détails du Projet
-          </h3>
-          
-          <div className="flex flex-wrap gap-3">
+      <div className="bg-[#0f172a]/70 p-5 md:p-6 rounded-2xl shadow-sm border border-slate-700/50 flex flex-col gap-5">
+        <h3 className="text-lg font-bold text-indigo-300 border-b border-slate-700/50 pb-2 flex items-center gap-2">
+          <Settings2 className="w-5 h-5" /> 1. Détails du Projet
+        </h3>
+        
+        {!store.devisModeRapide && (
+          <div className="flex flex-wrap gap-3 mb-2">
             {['fourniture_pose', 'fourniture', 'pose'].map((type) => (
               <label key={type} className={`flex-1 flex items-center justify-center gap-2 p-2 md:p-3 rounded-xl border-2 cursor-pointer transition-all ${store.prestationType === type ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-inner' : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>
                 <input type="radio" name="prestation" value={type} checked={store.prestationType === type} onChange={(e) => store.setField('prestationType', e.target.value)} className="hidden" />
@@ -177,13 +184,13 @@ export function Devis() {
               </label>
             ))}
           </div>
+        )}
 
-          <Textarea label="Descriptif des travaux" value={store.descriptifTravaux} onChange={(e: any) => store.setField('descriptifTravaux', e.target.value)} />
-          {!store.devisModeClient && (
-            <Textarea label="Détail interne du matériel prévu" value={store.devisMateriel} onChange={(e: any) => store.setField('devisMateriel', e.target.value)} />
-          )}
-        </div>
-      )}
+        <Textarea label="Descriptif des travaux" value={store.descriptifTravaux} onChange={(e: any) => store.setField('descriptifTravaux', e.target.value)} />
+        {!store.devisModeClient && !store.devisModeRapide && (
+          <Textarea label="Détail interne du matériel prévu" value={store.devisMateriel} onChange={(e: any) => store.setField('devisMateriel', e.target.value)} />
+        )}
+      </div>
 
       {/* MOTEUR DE CHIFFRAGE (Masqué en Vue Client) */}
       {!store.devisModeClient && (
@@ -201,15 +208,32 @@ export function Devis() {
               <Input type="number" step="0.01" label="Coût d'achat global HT (€)" value={store.coutMaterielHT || ''} onChange={(e: any) => store.setField('coutMaterielHT', parseFloat(e.target.value) || 0)} />
             </div>
 
-            <div className="flex flex-col gap-3 p-4 bg-slate-800/40 rounded-xl border border-slate-700/50 hover:border-slate-500 transition-colors">
+            <div className="flex flex-col gap-3 p-4 bg-slate-800/40 rounded-xl border border-slate-700/50 hover:border-slate-500 transition-colors relative">
               <h4 className="font-black text-slate-300 text-xs tracking-widest uppercase flex items-center justify-between">
                 <div className="flex items-center gap-2"><span>👷</span> Main d'œuvre</div>
                 <span className="text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{totalMoHT.toFixed(2)} € HT</span>
               </h4>
               <div className="grid grid-cols-2 gap-3 mt-1">
-                <Input type="number" step="1" label="TauxHoraire(€)" value={store.tauxHoraireMO || ''} onChange={(e: any) => store.setField('tauxHoraireMO', parseFloat(e.target.value) || 0)} />
+                <Input type="number" step="1" label="TauxHoraire(€)" value={store.tauxHoraireMO || ''} onChange={(e: any) => store.setField('tauxHoraireMO', parseFloat(e.target.value) || 0)} disabled={store.devisModeRapide} />
                 <Input type="number" step="0.5" label="Heures" value={store.heuresMO || ''} onChange={(e: any) => store.setField('heuresMO', parseFloat(e.target.value) || 0)} />
               </div>
+              
+              {/* BOUTON CALCUL RAPIDE */}
+              {store.devisModeRapide && (
+                <div className="mt-2">
+                  <Button 
+                    onClick={() => {
+                      store.setField('margePourcentage', 30);
+                      store.setField('prixFinalManuel', null);
+                      store.setField('ajustementManuel', 0);
+                    }}
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black py-2 rounded-lg gap-2 shadow-lg active:scale-95 transition-all text-xs"
+                  >
+                    <Zap className="w-4 h-4 text-yellow-200 animate-pulse" />
+                    ⚡ CALCUL RAPIDE (30% MARGE)
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
