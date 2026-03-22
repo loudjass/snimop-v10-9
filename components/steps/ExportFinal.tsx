@@ -398,17 +398,37 @@ export function ExportFinal() {
       pdf.setFontSize(10);
       pdf.setTextColor(60, 60, 60);
 
-      // Left Column (Base calculation)
+      // Mode detection for PDF
+      const calcMode = isEcrasementTotal ? 'IMPOSÉ' : (Number(store.ajustementManuel) !== 0 ? 'AJUSTÉ' : 'AUTO');
+      const isClientMode = store.devisModeClient;
+
+      // Left Column (Internal details OR Summary)
       pdf.setFont("helvetica", "normal");
-      pdf.text(`Fournitures : ${store.coutMaterielHT?.toFixed(2) || '0.00'} €`, 20, fY);
-      pdf.text(`Main d'œuvre (${store.heuresMO || 0}h) : ${totalMoHT.toFixed(2)} €`, 20, fY + 6);
-      pdf.text(`Déplacement : ${store.coutDeplacementHT?.toFixed(2) || '0.00'} €`, 20, fY + 12);
-      if (store.nacelleActive) {
-        pdf.text(`Option Nacelle : ${store.coutNacelleHT?.toFixed(2) || '0.00'} €`, 20, fY + 18);
-      }
-      if (store.autresFraisHT) {
-        let yAutre = store.nacelleActive ? fY + 24 : fY + 18;
-        pdf.text(`Autres frais : ${store.autresFraisHT.toFixed(2)} €`, 20, yAutre);
+      if (calcMode === 'IMPOSÉ' || isClientMode) {
+        // CLEAN MODE: Only show the main prestation
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Description de la prestation :", 20, fY);
+        pdf.setFont("helvetica", "normal");
+        const lines = pdf.splitTextToSize(store.descriptifTravaux || prestationStr, 70);
+        pdf.text(lines, 20, fY + 6);
+      } else {
+        // DETAIL MODE: Show breakdown
+        pdf.text(`Fournitures : ${store.coutMaterielHT?.toFixed(2) || '0.00'} €`, 20, fY);
+        pdf.text(`Main d'œuvre (${store.heuresMO || 0}h) : ${totalMoHT.toFixed(2)} €`, 20, fY + 6);
+        pdf.text(`Déplacement : ${store.coutDeplacementHT?.toFixed(2) || '0.00'} €`, 20, fY + 12);
+        let nextY = fY + 18;
+        if (store.nacelleActive) {
+          pdf.text(`Option Nacelle : ${store.coutNacelleHT?.toFixed(2) || '0.00'} €`, 20, nextY);
+          nextY += 6;
+        }
+        if (store.autresFraisHT) {
+          pdf.text(`Autres frais : ${store.autresFraisHT.toFixed(2)} €`, 20, nextY);
+          nextY += 6;
+        }
+        if (calcMode === 'AJUSTÉ') {
+          pdf.setFont("helvetica", "bolditalic");
+          pdf.text(`Ajustement Chantier : ${(store.ajustementManuel || 0).toFixed(2)} €`, 20, nextY);
+        }
       }
       
       // Right Column (Totals - ULTRA VISIBLE)

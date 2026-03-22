@@ -98,6 +98,14 @@ export function Devis() {
     
     const acompte = acompteDemande ? ttc * (Number(acomptePourcentage) / 100) : 0;
 
+    // Chiffrage Mode Identification
+    let calcMode: 'AUTO' | 'AJUSTÉ' | 'IMPOSÉ' = 'AUTO';
+    if (isOverride) {
+      calcMode = 'IMPOSÉ';
+    } else if (Number(ajustementManuel) !== 0) {
+      calcMode = 'AJUSTÉ';
+    }
+
     // Visual Marge logic
     let mColor = 'text-green-400';
     let mBg = 'bg-green-500/10 border-green-500/30';
@@ -128,7 +136,8 @@ export function Devis() {
       margeColor: mColor,
       margeBg: mBg,
       margeIcon: mIcon,
-      margeText: mText
+      margeText: mText,
+      calcMode
     };
   }, [
     coutMaterielHT, tauxHoraireMO, heuresMO, coutDeplacementHT, coutNacelleHT, 
@@ -140,7 +149,7 @@ export function Devis() {
   const { 
     totalMoHT, depHT, totalNacelleHT, othersHT, coutTotalHT, 
     margeEuros, prixConseilleHT, prixRetenuHT, tva, totalTTC, 
-    acompteCalcule, isEcrasementTotal, margeColor, margeBg, margeIcon, margeText 
+    acompteCalcule, isEcrasementTotal, margeColor, margeBg, margeIcon, margeText, calcMode
   } = chiffrage;
 
 
@@ -321,9 +330,20 @@ export function Devis() {
             <span className="text-xl md:text-2xl font-mono font-black text-slate-200">{coutTotalHT.toFixed(2)} €</span>
           </div>
 
-          {/* CONSTRUCTION DU PRIX DE VENTE */}
-          <h3 className="text-xl font-black text-blue-400 border-b border-slate-700/50 pb-2 mt-4 flex items-center gap-2">
-            <span>💰</span> 3. Marge & Ajustements
+          {/* AJUSTEMENT CHANTIER & TVA */}
+          <h3 className="text-xl font-black text-blue-400 border-b border-slate-700/50 pb-2 mt-4 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+               <span>💰</span> 3. Ajustement Chantier & TVA
+            </div>
+            
+            {/* BADGE DE MODE ACTIF */}
+            <div className={`text-[10px] font-black px-3 py-1 rounded-full border ${
+              calcMode === 'IMPOSÉ' ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' :
+              calcMode === 'AJUSTÉ' ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400' :
+              'bg-blue-500/10 border-blue-500/20 text-blue-500/60'
+            }`}>
+              MODE {calcMode}
+            </div>
           </h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
@@ -359,17 +379,17 @@ export function Devis() {
 
             <div className="flex flex-col gap-4 p-5 bg-[#0f172a]/90 rounded-xl border border-slate-700 shadow-sm relative">
               <div className="absolute top-0 right-0 p-2">
-                 <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded ${isEcrasementTotal ? 'bg-amber-500/20 text-amber-400 font-mono ring-2 ring-amber-500/50' : 'bg-blue-500/20 text-blue-400'}`}>
-                   {isEcrasementTotal ? 'MANUEL' : 'AUTO'}
+                 <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded ${calcMode === 'IMPOSÉ' ? 'bg-amber-500/20 text-amber-400 font-mono ring-2 ring-amber-500/50' : 'bg-blue-500/20 text-blue-400'}`}>
+                   {calcMode}
                  </span>
               </div>
-              <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs text-center border-b border-white/5 pb-2 w-full pr-8">Correction</h4>
+              <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs text-center border-b border-white/5 pb-2 w-full pr-8">Ajustement Chantier</h4>
               <div className="flex-1 space-y-4">
-                <Input type="number" step="1" label="Ajuster (+/- €)" value={store.ajustementManuel || ''} onChange={(e: any) => store.setField('ajustementManuel', parseFloat(e.target.value) || 0)} disabled={isEcrasementTotal} placeholder="ex: 50" className="border-blue-500/30" />
-                <Input type="number" step="1" label="Prix fixé manuellement (le calcul automatique est ignoré)" value={store.prixFinalManuel !== null ? store.prixFinalManuel : ''} onChange={(e: any) => {
+                <Input type="number" step="1" label="Majoration / Remise HT (€)" value={store.ajustementManuel || ''} onChange={(e: any) => store.setField('ajustementManuel', parseFloat(e.target.value) || 0)} disabled={isEcrasementTotal} placeholder="ex: 50" className="border-blue-500/30" />
+                <Input type="number" step="1" label="Prix final HT imposé (écrase le calcul)" value={store.prixFinalManuel !== null ? store.prixFinalManuel : ''} onChange={(e: any) => {
                   const val = e.target.value === '' ? null : parseFloat(e.target.value);
                   store.setField('prixFinalManuel', val);
-                }} placeholder="Prix Forfaitaire" className={`placeholder-opacity-50 ${isEcrasementTotal ? 'border-amber-500/50 bg-amber-500/10 text-amber-100' : 'border-slate-600 bg-slate-800'}`} />
+                }} placeholder="Saisir un prix HT manuel" className={`placeholder-opacity-50 ${isEcrasementTotal ? 'border-amber-500/50 bg-amber-500/10 text-amber-100' : 'border-slate-600 bg-slate-800'}`} />
               </div>
             </div>
 
@@ -444,10 +464,22 @@ export function Devis() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700">
-                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">TVA Appliquée (%) :</span>
-                <div className="w-20">
-                  <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold bg-slate-800 border-slate-600 h-9" />
+              <div className="flex flex-col gap-3 p-4 bg-slate-800/80 rounded-2xl border border-indigo-500/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-black text-indigo-300 uppercase tracking-wider">TVA ({store.tvaPourcentage}%)</span>
+                  <div className="w-24">
+                    <Input 
+                      type="number" 
+                      step="0.1" 
+                      value={store.tvaPourcentage || ''} 
+                      onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} 
+                      className="text-center font-black bg-slate-900 border-indigo-500" 
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center bg-black/20 p-2 rounded-lg">
+                  <span className="text-xs font-bold text-slate-400">Montant TVA (€)</span>
+                  <span className="text-lg font-black text-white font-mono">+{tva.toFixed(2)} €</span>
                 </div>
               </div>
 
@@ -482,13 +514,12 @@ export function Devis() {
               
               {/* TVA DISPLAY & INPUT */}
               <div className="flex flex-col group">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">TVA</span>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">TVA ({store.tvaPourcentage}%)</span>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-lg font-bold text-slate-400 font-mono">+{tva.toFixed(2)}€</span>
-                  <div className="w-12 opacity-40 group-hover:opacity-100 transition-opacity">
-                    <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold bg-slate-800/50 border-slate-700 h-6 px-1 text-[10px] rounded" />
+                  <span className="text-lg font-extrabold text-slate-300 font-mono">+{tva.toFixed(2)}€</span>
+                  <div className="w-14 opacity-50 group-hover:opacity-100 transition-opacity">
+                    <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-black bg-slate-800/80 border-slate-700 h-7 px-1 text-xs rounded-lg" />
                   </div>
-                  <span className="text-[9px] font-bold text-slate-600">%</span>
                 </div>
               </div>
 
@@ -511,9 +542,18 @@ export function Devis() {
             </div>
 
             {/* DROITE: TOTAL TTC (DOMINANT) */}
-            <div className={`flex items-center gap-4 bg-blue-500/5 px-6 py-2 rounded-2xl border transition-all duration-300 ${isPricePulsing ? 'border-blue-400 scale-105 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.4)]' : 'border-blue-500/20 shadow-inner'}`}>
+            <div className={`flex items-center gap-4 bg-blue-500/5 px-6 py-2 rounded-2xl border transition-all duration-300 relative ${isPricePulsing ? 'border-blue-400 scale-105 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.4)]' : 'border-blue-500/20 shadow-inner'}`}>
               <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-0.5">TOTAL TTC</span>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border border-current opacity-70 ${
+                    calcMode === 'IMPOSÉ' ? 'bg-amber-500/40 text-amber-200' :
+                    calcMode === 'AJUSTÉ' ? 'bg-indigo-500/40 text-indigo-200' :
+                    'bg-blue-500/30 text-blue-200'
+                  }`}>
+                    {calcMode}
+                  </span>
+                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">TOTAL TTC</span>
+                </div>
                 <span className={`text-4xl lg:text-5xl font-black text-white font-mono drop-shadow-[0_2px_10px_rgba(59,130,246,0.5)] leading-none transition-transform duration-300 ${isPricePulsing ? 'scale-110' : 'scale-100'}`}>{totalTTC.toFixed(2)} €</span>
               </div>
             </div>
@@ -526,8 +566,17 @@ export function Devis() {
           onClick={() => setIsPanelOpen(true)}
           className={`md:hidden w-full h-[60px] max-w-sm bg-slate-900 border-2 border-blue-500/40 rounded-full flex items-center justify-between px-6 shadow-[0_0_30px_rgba(59,130,246,0.3)] pointer-events-auto active:scale-95 transition-all duration-300 cursor-pointer backdrop-blur-3xl bg-opacity-95 ${isPricePulsing ? 'scale-105 border-blue-400 shadow-[0_0_40px_rgba(59,130,246,0.5)]' : ''}`}
         >
-          <div className="flex flex-col">
-            <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] leading-tight">TOTAL TTC</span>
+          <div className="flex flex-col items-start">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black text-blue-400/80 uppercase tracking-widest">TTC</span>
+              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full border ${
+                calcMode === 'IMPOSÉ' ? 'bg-amber-500/30 border-amber-500/50 text-amber-300' :
+                calcMode === 'AJUSTÉ' ? 'bg-indigo-500/30 border-indigo-500/50 text-indigo-300' :
+                'bg-blue-500/20 border-blue-500/30 text-blue-300/80'
+              }`}>
+                {calcMode}
+              </span>
+            </div>
             <span className={`text-xl font-black text-white font-mono leading-none tracking-tight transition-transform duration-300 ${isPricePulsing ? 'scale-110' : ''}`}>{totalTTC.toFixed(2)} €</span>
           </div>
           <div className="bg-blue-500/20 p-1.5 rounded-full border border-blue-500/30">
