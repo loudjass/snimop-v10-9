@@ -354,47 +354,55 @@ export function Devis() {
         </div>
 
         {/* PIED DE PAGE : VERSION DESKTOP */}
-        <div className="hidden md:flex w-full max-w-4xl bg-slate-900 border-2 border-slate-700/80 rounded-[2rem] p-5 shadow-[0_-10px_30px_rgba(0,0,0,0.9)] relative overflow-hidden pointer-events-auto backdrop-blur-3xl bg-opacity-95">
-          <div className="w-full flex flex-col gap-4">
-            <div className="flex justify-between items-center border-b border-slate-700/50 pb-2 mb-2">
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer p-1">
-                  <input type="checkbox" checked={store.acompteDemande} onChange={(e) => store.setField('acompteDemande', e.target.checked)} className="w-5 h-5 rounded text-blue-500 bg-slate-800 border-slate-600 focus:ring-blue-500" />
-                  <span className="font-bold text-sm text-slate-300 uppercase tracking-wider">Acompte demandé</span>
+        <div className="hidden md:flex w-full max-w-5xl bg-slate-900/95 border border-slate-700/50 rounded-3xl py-2.5 px-8 shadow-[0_-8px_25px_rgba(0,0,0,0.6)] relative overflow-hidden pointer-events-auto backdrop-blur-2xl">
+          <div className="w-full flex items-center justify-between gap-10">
+            
+            {/* GAUCHE: RÉGLAGES & SECONDAIRES */}
+            <div className="flex items-center gap-8 flex-1">
+              {/* HT */}
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Prix HT</span>
+                <span className="text-xl font-bold text-slate-200 font-mono">{prixRetenuHT.toFixed(2)}€</span>
+              </div>
+              
+              {/* TVA DISPLAY & INPUT */}
+              <div className="flex flex-col group">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">TVA</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-lg font-bold text-slate-400 font-mono">+{tva.toFixed(2)}€</span>
+                  <div className="w-12 opacity-40 group-hover:opacity-100 transition-opacity">
+                    <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold bg-slate-800/50 border-slate-700 h-6 px-1 text-[10px] rounded" />
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-600">%</span>
+                </div>
+              </div>
+
+              {/* ACOMPTE (Si activé) */}
+              <div className="flex items-center gap-4 border-l border-slate-800 pl-8 ml-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={store.acompteDemande} onChange={(e) => store.setField('acompteDemande', e.target.checked)} className="w-4 h-4 rounded text-blue-600 bg-slate-800 border-slate-700" />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Acompte</span>
                 </label>
+                
                 {store.acompteDemande && (
-                  <div className="flex items-center gap-2 bg-indigo-900/40 px-3 py-1.5 rounded-lg border border-indigo-500/30 shadow-inner">
-                    <span className="text-sm font-bold text-indigo-200 uppercase tracking-widest">Acompte à verser :</span>
-                    <span className="text-xl font-black text-white font-mono">{acompteCalcule.toFixed(2)} €</span>
-                    <div className="w-14 ml-2">
-                      <Input type="number" step="1" value={store.acomptePourcentage || ''} onChange={(e: any) => store.setField('acomptePourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold text-xs h-7 px-1 bg-slate-800" />
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-black text-indigo-400 font-mono">{acompteCalcule.toFixed(2)}€</span>
+                    <div className="w-12">
+                      <Input type="number" step="1" value={store.acomptePourcentage || ''} onChange={(e: any) => store.setField('acomptePourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold text-[10px] h-6 px-1 bg-slate-800/80 border-indigo-900/50" />
                     </div>
-                    <span className="text-xs text-indigo-300">%</span>
                   </div>
                 )}
               </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">TVA Appliquée :</span>
-                <div className="w-16">
-                  <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold bg-slate-800/80 border-slate-600 focus:border-blue-500 px-1 hover:border-blue-500 py-1 h-7 text-xs" />
-                </div>
-                <span className="text-xs font-bold text-slate-500">%</span>
+            </div>
+
+            {/* DROITE: TOTAL TTC (DOMINANT) */}
+            <div className="flex items-center gap-4 bg-blue-500/5 px-6 py-2 rounded-2xl border border-blue-500/20 shadow-inner">
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-0.5">TOTAL TTC</span>
+                <span className="text-4xl lg:text-5xl font-black text-white font-mono drop-shadow-[0_2px_10px_rgba(59,130,246,0.5)] leading-none">{totalTTC.toFixed(2)} €</span>
               </div>
             </div>
-            <div className="flex gap-4 items-center justify-between">
-              <div className="flex flex-col justify-center items-start w-1/3 border-r border-slate-700/50 pr-6 gap-1">
-                <span className="text-sm text-slate-400 font-bold uppercase tracking-widest">PRIX FINAL HT</span>
-                <span className="text-2xl font-black text-white font-mono">{prixRetenuHT.toFixed(2)} €</span>
-              </div>
-              <div className="flex flex-col justify-center items-start w-1/3 border-r border-slate-700/50 pr-6 pl-6 gap-1">
-                <span className="text-sm text-slate-400 font-bold uppercase tracking-widest">TVA CALCULEE</span>
-                <span className="text-xl font-black text-slate-300 font-mono">+{tva.toFixed(2)} €</span>
-              </div>
-              <div className="flex flex-col flex-1 justify-center items-center py-3 px-4 rounded-xl border border-blue-400/50 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-                <span className="text-sm font-black text-blue-300 uppercase tracking-widest mb-0.5">TOTAL TTC</span>
-                <span className="text-6xl font-black text-white font-mono drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] leading-none">{totalTTC.toFixed(2)} €</span>
-              </div>
-            </div>
+
           </div>
         </div>
 
