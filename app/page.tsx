@@ -1,4 +1,5 @@
 "use client";
+// Force Vercel build trigger
 
 import { useDossierStore } from '@/store/useDossierStore';
 import { SnimopLogo } from '@/components/ui/SnimopLogo';
