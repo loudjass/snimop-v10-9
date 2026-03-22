@@ -4,30 +4,12 @@ import { useDossierStore } from '@/store/useDossierStore';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, ArrowRight, Camera, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { PhotoManager } from '@/components/ui/PhotoManager';
+import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
 
 export function VisiteAvantDevis() {
   const store = useDossierStore();
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      Array.from(e.target.files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            store.setField('photos', [...store.photos, event.target.result as string]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-  };
-
-  const removePhoto = (index: number) => {
-    const newPhotos = [...store.photos];
-    newPhotos.splice(index, 1);
-    store.setField('photos', newPhotos);
-  };
 
   const handleNext = () => store.setField('currentStep', 3);
   const handlePrev = () => store.setField('currentStep', 1);
@@ -67,29 +49,10 @@ export function VisiteAvantDevis() {
 
         <Textarea label="Remarques complémentaires" value={store.remarques} onChange={(e: any) => store.setField('remarques', e.target.value)} />
 
-        {/* Section Photos */}
-        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-700/50">
-          <label className="text-sm font-bold text-slate-300 ml-1">Photos (Visite / Constat)</label>
-          <div className="flex flex-wrap gap-4 mt-2">
-            {store.photos.map((photo, idx) => (
-              <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-600">
-                <img src={photo} alt="" className="w-full h-full object-cover" />
-                <button 
-                  onClick={() => removePhoto(idx)} 
-                  className="absolute top-1 right-1 bg-red-500 rounded-full p-1 text-white shadow-md hover:bg-red-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-            <label className="w-24 h-24 rounded-lg border-2 border-dashed border-slate-600 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800/50 transition-colors bg-slate-900/40 text-slate-400 hover:text-white">
-              <Camera className="w-8 h-8 mb-1" />
-              <span className="text-[10px] font-semibold text-center leading-tight">Ajouter<br />Photo</span>
-              <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
-            </label>
-          </div>
-        </div>
+        <PhotoManager />
       </div>
+
+      <StepSignatureZone stepKey="visite" title="Visite Constat" />
 
       <div className="flex justify-between mt-4">
         <Button variant="outline" onClick={handlePrev} className="px-6"><ArrowLeft className="w-5 h-5 mr-1" /> Retour</Button>

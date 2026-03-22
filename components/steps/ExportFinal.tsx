@@ -42,11 +42,11 @@ const loadMascotteBase64 = async (): Promise<{img: HTMLImageElement, ratio: numb
   }
 };
 
-const loadPhotoBase64 = async (src: string): Promise<{img: HTMLImageElement, ratio: number} | null> => {
+const loadPhotoBase64 = async (src: string, type: string, title: string, timestamp: string): Promise<{img: HTMLImageElement, ratio: number, type: string, title: string, timestamp: string} | null> => {
   try {
     return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => resolve({ img, ratio: img.width / img.height });
+      img.onload = () => resolve({ img, ratio: img.width / img.height, type, title, timestamp });
       img.onerror = () => resolve(null);
       img.src = src;
     });
@@ -79,9 +79,9 @@ export function ExportFinal() {
       const logoData = await loadLogoBase64();
       const mascotteData = await loadMascotteBase64();
       
-      const photoPromises = (store.photos || []).map(p => loadPhotoBase64(p));
+      const photoPromises = (store.photos || []).map(p => loadPhotoBase64(p.imageBase64, p.type, p.title, p.timestamp));
       const loadedPhotosResult = await Promise.all(photoPromises);
-      const validPhotos = loadedPhotosResult.filter(p => p !== null) as {img: HTMLImageElement, ratio: number}[];
+      const validPhotos = loadedPhotosResult.filter(p => p !== null) as {img: HTMLImageElement, ratio: number, type: string, title: string, timestamp: string}[];
 
       // ==========================================
       // PAGE 1 : PAGE DE GARDE (PLUS PRO, MIEUX CENTRÉE)
@@ -270,6 +270,43 @@ export function ExportFinal() {
         return localY + (lines.length * 6) + 16; // breathing room
       };
 
+      const addStepSignature = (stepKey: string, stepTitle: string) => {
+        const sig = store.stepSignatures?.[stepKey];
+        if (!sig) return;
+        if (y > 240) { pdf.addPage(); y = drawHeader(pdf, stepTitle + " (Validation)"); }
+        y += 5;
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.5);
+        pdf.line(14, y, 196, y);
+        y += 8;
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(30, 58, 138);
+        pdf.text("--- VALIDATION DE L'ÉTAPE ---", 105, y, { align: 'center' });
+        y += 8;
+      
+        pdf.setFontSize(9);
+        pdf.setTextColor(80, 80, 80);
+        pdf.text(`Technicien : ${sig.technicienNom || '-'}`, 14, y);
+        if (sig.technicienSignature && sig.technicienSignature.startsWith('data:image')) {
+          pdf.addImage(sig.technicienSignature, 'PNG', 14, y + 2, 35, 12);
+        }
+        
+        pdf.text(`Client : ${sig.clientNom || '-'}`, 110, y);
+        if (sig.clientSignature && sig.clientSignature.startsWith('data:image')) {
+          pdf.addImage(sig.clientSignature, 'PNG', 110, y + 2, 35, 12);
+        }
+        
+        y += 18;
+        if (sig.dateSignature) {
+          pdf.setFont("helvetica", "italic");
+          pdf.setFontSize(8);
+          // @ts-ignore
+          pdf.text(`Signé le ${new Date(sig.dateSignature).toLocaleString('fr-FR')}`, 105, y, { align: 'center' });
+        }
+        y += 10;
+      };
+
       // PAGE 2
       pdf.addPage();
       y = drawHeader(pdf, "INFORMATIONS GÉNÉRALES SNIMOP");
@@ -280,6 +317,7 @@ export function ExportFinal() {
       pdf.setDrawColor(230, 230, 230);
       pdf.line(14, y - 5, 196, y - 5);
       y = addSection("Objet de l'intervention", store.objet);
+      addStepSignature('informations', "INFORMATIONS GÉNÉRALES");
 
       // PAGE 3
       pdf.addPage();
@@ -295,6 +333,7 @@ export function ExportFinal() {
       y = Math.max(yL, yR);
       y = addSection("Option nacelle", store.optionNacelle);
       y = addSection("Remarques", store.remarques);
+      addStepSignature('visite', "VISITE AVANT DEVIS");
 
       // PAGE 4
       pdf.addPage();
@@ -330,6 +369,8 @@ export function ExportFinal() {
       pdf.text("Délai :", 20, y);
       pdf.setFont("helvetica", "normal");
       pdf.text(store.delai || 'Non renseigné', 35, y);
+      y += 10;
+      addStepSignature('devis', "DEVIS");
 
       // PAGE 5
       pdf.addPage();
@@ -338,6 +379,7 @@ export function ExportFinal() {
       y = addSection("Nature des travaux à réaliser", store.natureTravaux);
       y = addSection("Matériel nécessaire", store.materielPrevu); 
       y = addSection("Consignes et Remarques", store.consignes);
+      addStepSignature('intervention', "BON D'INTERVENTION");
 
       // PAGE 6
       pdf.addPage();
@@ -351,6 +393,7 @@ export function ExportFinal() {
       y = Math.max(yL, yR);
       y = addSection("Réserves", store.rapportReserves);
       y = addSection("Observations finales", store.observationsFinales);
+      addStepSignature('rapport', "RAPPORT D'INTERVENTION");
 
       // PAGE 7
       pdf.addPage();
@@ -385,10 +428,10 @@ export function ExportFinal() {
       }
 
       // ==========================================
-      // PAGE PHOTOS (ANNEXE) - OPTIMISÉ 2 PER PAGE
+      // PAGE PHOTOS (ANNEXE) - OPTIMISÉ 2 PER PAGE AVEC METADATA
       // ==========================================
       if (validPhotos.length > 0) {
-        let chunkedPhotos: {img: HTMLImageElement, ratio: number}[][] = [];
+        let chunkedPhotos: {img: HTMLImageElement, ratio: number, type: string, title: string, timestamp: string}[][] = [];
         for (let i = 0; i < validPhotos.length; i += 2) {
           chunkedPhotos.push(validPhotos.slice(i, i + 2));
         }
@@ -403,7 +446,7 @@ export function ExportFinal() {
             // 1 Photo unique : Grande et centrée
             const p = pagePhotos[0];
             const maxW = 160;
-            const maxH = 190;
+            const maxH = 175;
             let drawW = maxW;
             let drawH = drawW / p.ratio;
 
@@ -418,11 +461,25 @@ export function ExportFinal() {
               pdf.setDrawColor(200, 200, 200);
               pdf.setLineWidth(0.5);
               pdf.rect(drawX, currentPhotoY, drawW, drawH);
+              
+              const metaY = currentPhotoY + drawH + 8;
+              pdf.setFontSize(10);
+              pdf.setTextColor(50, 50, 50);
+              pdf.setFont("helvetica", "bold");
+              pdf.text(`Type : ${p.type}`, drawX, metaY);
+              if (p.timestamp) {
+                const dateStr = new Date(p.timestamp).toLocaleString('fr-FR');
+                pdf.text(`Date : ${dateStr}`, drawX + drawW, metaY, { align: 'right' });
+              }
+              if (p.title) {
+                pdf.setFont("helvetica", "normal");
+                pdf.text(p.title, drawX, metaY + 5);
+              }
             } catch(e) { console.error("Could not add image to PDF", e); }
           } else {
             // 2 Photos maxi : Proprement réparties
             const maxW = 150;
-            const maxH = 100; 
+            const maxH = 90; 
             
             for (let i = 0; i < pagePhotos.length; i++) {
               const p = pagePhotos[i];
@@ -440,9 +497,23 @@ export function ExportFinal() {
                 pdf.setDrawColor(200, 200, 200);
                 pdf.setLineWidth(0.5);
                 pdf.rect(drawX, currentPhotoY, drawW, drawH);
+                
+                const metaY = currentPhotoY + drawH + 6;
+                pdf.setFontSize(10);
+                pdf.setTextColor(50, 50, 50);
+                pdf.setFont("helvetica", "bold");
+                pdf.text(`Type : ${p.type}`, drawX, metaY);
+                if (p.timestamp) {
+                  const dateStr = new Date(p.timestamp).toLocaleString('fr-FR');
+                  pdf.text(`Date : ${dateStr}`, drawX + drawW, metaY, { align: 'right' });
+                }
+                if (p.title) {
+                  pdf.setFont("helvetica", "normal");
+                  pdf.text(p.title, drawX, metaY + 5);
+                }
               } catch(e) { console.error("Could not add image to PDF", e); }
 
-              currentPhotoY += drawH + 18; // Espace inter-photos propre
+              currentPhotoY += drawH + 20; // Espace inter-photos propre
             }
           }
         }

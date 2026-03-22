@@ -4,6 +4,7 @@ import { useDossierStore } from '@/store/useDossierStore';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
 
 export function InformationsGenerales() {
   const store = useDossierStore();

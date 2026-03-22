@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
 
 export function BonIntervention() {
   const store = useDossierStore();
@@ -44,6 +45,8 @@ export function BonIntervention() {
         <Textarea label="Matériel prévu" value={store.materielPrevu} onChange={(e: any) => store.setField('materielPrevu', e.target.value)} />
         <Textarea label="Consignes / Remarques de préparation" value={store.consignes} onChange={(e: any) => store.setField('consignes', e.target.value)} />
       </div>
+
+      <StepSignatureZone stepKey="intervention" title="Intervention" />
 
       <div className="flex justify-between mt-4">
         <Button variant="outline" onClick={handlePrev} className="px-6"><ArrowLeft className="w-5 h-5 mr-1" /> Retour</Button>

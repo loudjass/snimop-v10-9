@@ -147,8 +147,11 @@ export function DocumentTemplate() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             {store.photos.map((photo, idx) => (
-              <div key={idx} className="border border-gray-300 rounded-md overflow-hidden aspect-video flex items-center justify-center bg-gray-50 p-2">
-                <img src={photo} alt={`Annexe ${idx + 1}`} className="max-w-full max-h-full object-contain" />
+              <div key={photo.id || idx} className="border border-gray-300 rounded-md overflow-hidden aspect-video flex flex-col items-center justify-center bg-gray-50 p-2 relative">
+                <img src={photo.imageBase64} alt={`Annexe ${idx + 1}`} className="max-w-full max-h-full object-contain mb-4" />
+                <div className="absolute bottom-1 w-full text-center text-[10px] text-gray-500 font-bold bg-white/80 py-0.5">
+                  {photo.type} - {photo.title}
+                </div>
               </div>
             ))}
           </div>

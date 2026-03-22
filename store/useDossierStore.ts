@@ -1,8 +1,27 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export interface DossierState {
-  dossierCounter: number;
+export interface Photo {
+  id: string;
+  type: string;
+  title: string;
+  timestamp: string;
+  imageBase64: string;
+}
+
+export interface StepSignature {
+  technicienNom: string;
+  technicienSignature: string;
+  clientNom: string;
+  clientSignature: string;
+  dateSignature: string;
+}
+
+export interface DossierData {
+  id: string;
+  updatedAt: string;
+  status: string; // 'Brouillon' | 'En cours' | 'Terminé' | 'Exporté'
+  
   numeroAffaire: string;
   date: string;
   client: string;
@@ -15,7 +34,7 @@ export interface DossierState {
   objet: string;
   typeDoc: string;
   interventionType: string;
-  statutDossier: string;
+  statutDossier: string; // This is the old visual field, we keep it for backward compat or merge it? Let's keep it to not break UI.
 
   contexte: string;
   constat: string;
@@ -56,16 +75,25 @@ export interface DossierState {
   nomSignataireClient: string;
   fonctionSignataire: string;
   signatureClient: string;
-  photos: string[];
+  photos: Photo[];
+  stepSignatures: Record<string, StepSignature>;
   currentStep: number;
+}
 
-  setField: (field: keyof DossierState, value: any) => void;
-  resetDossier: () => void;
+export interface StoreState extends DossierData {
+  dossierCounter: number;
+  dossiers: Record<string, DossierData>;
+  
+  setField: (field: keyof DossierData, value: any) => void;
+  saveCurrentDossier: () => void;
+  loadDossier: (id: string) => void;
+  deleteDossier: (id: string) => void;
+  duplicateDossier: (id: string) => void;
   startNewDossier: () => void;
 }
 
-const initialState = {
-  numeroAffaire: '',
+const initialDossierData: Omit<DossierData, 'id' | 'updatedAt' | 'numeroAffaire'> = {
+  status: 'Brouillon',
   date: new Date().toISOString().split('T')[0],
   client: '',
   site: '',
@@ -119,30 +147,123 @@ const initialState = {
   fonctionSignataire: 'Client',
   signatureClient: '',
   photos: [],
+  stepSignatures: {},
   currentStep: 0,
 };
 
-export const useDossierStore = create<DossierState>()(
+// Extrait uniquement les champs d'un dossier depuis le root state
+const extractDossierData = (state: StoreState): DossierData => {
+  const { dossiers, dossierCounter, setField, saveCurrentDossier, loadDossier, deleteDossier, duplicateDossier, startNewDossier, ...data } = state;
+  return data as DossierData;
+};
+
+export const useDossierStore = create<StoreState>()(
   persist(
-    (set) => ({
-      ...initialState,
+    (set, get) => ({
+      ...initialDossierData,
+      id: Date.now().toString(),
+      numeroAffaire: '',
+      updatedAt: new Date().toISOString(),
+      
+      dossiers: {},
       dossierCounter: 0,
-      setField: (field, value) => set((state) => ({ ...state, [field]: value })),
-      resetDossier: () => set((state) => ({ ...initialState, dossierCounter: state.dossierCounter })),
-      startNewDossier: () => set((state) => {
+
+      setField: (field, value) => set((state) => {
+        // Auto-update status from Brouillon to En cours on first field change (if not just changing tabs)
+        let newStatus = state.status;
+        if (state.status === 'Brouillon' && field !== 'currentStep') {
+            newStatus = 'En cours';
+        }
+        
+        return { 
+            ...state, 
+            [field]: value, 
+            status: newStatus,
+            updatedAt: new Date().toISOString() 
+        };
+      }),
+
+      saveCurrentDossier: () => set((state) => {
+        const currentData = extractDossierData(state);
+        // Ensure it doesn't save empty phantom dossiers at startup
+        if (!currentData.numeroAffaire && !currentData.client) return state;
+        
+        return {
+          dossiers: {
+            ...state.dossiers,
+            [currentData.id]: currentData
+          }
+        };
+      }),
+
+      loadDossier: (id) => set((state) => {
+        const target = state.dossiers[id];
+        if (!target) return state;
+        return { ...state, ...target };
+      }),
+
+      deleteDossier: (id) => set((state) => {
+        const newDossiers = { ...state.dossiers };
+        delete newDossiers[id];
+        return { dossiers: newDossiers };
+      }),
+
+      duplicateDossier: (id) => set((state) => {
+        const target = state.dossiers[id];
+        if (!target) return state;
+        
         const nextCounter = (state.dossierCounter || 0) + 1;
         const year = new Date().getFullYear();
         const nextNum = `SN-${year}-${String(nextCounter).padStart(3, '0')}`;
-        return {
-          ...initialState,
-          dossierCounter: nextCounter,
+        
+        const duplicated: DossierData = {
+          ...target,
+          id: Date.now().toString(),
           numeroAffaire: nextNum,
-          currentStep: 1
+          status: 'Brouillon',
+          updatedAt: new Date().toISOString(),
+          // Clear signatures
+          signatureClient: '',
+          stepSignatures: {}
+        };
+        
+        return {
+          ...state,
+          dossiers: {
+            ...state.dossiers,
+            [duplicated.id]: duplicated
+          },
+          dossierCounter: nextCounter
+        };
+      }),
+
+      startNewDossier: () => set((state) => {
+        // Automatically save current one before starting new if it has data
+        const currentData = extractDossierData(state);
+        const newDossiers = { ...state.dossiers };
+        
+        if (currentData.numeroAffaire || currentData.client) {
+            newDossiers[currentData.id] = currentData;
+        }
+
+        const nextCounter = (state.dossierCounter || 0) + 1;
+        const year = new Date().getFullYear();
+        const nextNum = `SN-${year}-${String(nextCounter).padStart(3, '0')}`;
+        
+        return {
+          ...initialDossierData,
+          id: Date.now().toString(),
+          numeroAffaire: nextNum,
+          updatedAt: new Date().toISOString(),
+          status: 'Brouillon',
+          currentStep: 1, // Skip direct to Infos
+          dossierCounter: nextCounter,
+          dossiers: newDossiers
         };
       }),
     }),
     {
-      name: 'snimop-dossier-storage',
+      name: 'snimop-praxedo-storage',
     }
   )
 );
