@@ -44,9 +44,9 @@ export function Devis() {
   let margeText = 'Rentable';
   
   if (mPct < 10) {
-    margeColor = 'text-red-400'; margeBg = 'bg-red-500/10 border-red-500/30'; margeIcon = '🔴'; margeText = 'Marge faible';
+    margeColor = 'text-red-400'; margeBg = 'bg-red-500/10 border-red-500/30'; margeIcon = '🔴'; margeText = 'Marge trop faible';
   } else if (mPct <= 25) {
-    margeColor = 'text-yellow-400'; margeBg = 'bg-yellow-500/10 border-yellow-500/30'; margeIcon = '🟡'; margeText = 'Standard';
+    margeColor = 'text-yellow-400'; margeBg = 'bg-yellow-500/10 border-yellow-500/30'; margeIcon = '🟡'; margeText = 'Marge correcte';
   } else if (mPct > 40) {
     margeColor = 'text-emerald-400'; margeBg = 'bg-emerald-500/10 border-emerald-500/30'; margeIcon = '🟢🟢'; margeText = 'Très rentable';
   }
@@ -63,7 +63,7 @@ export function Devis() {
   const acompteCalcule = store.acompteDemande ? totalTTC * ((store.acomptePourcentage || 0) / 100) : 0;
 
   return (
-    <div className="flex flex-col gap-6 py-4 pb-60 relative">
+    <div className="flex flex-col gap-5 py-3 pb-52 relative">
       
       {/* HEADER & TOGGLES */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 border-b border-white/10 pb-4">
@@ -250,7 +250,7 @@ export function Devis() {
               <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs text-center border-b border-white/5 pb-2 w-full pr-8">Correction</h4>
               <div className="flex-1 space-y-4">
                 <Input type="number" step="1" label="Ajuster (+/- €)" value={store.ajustementManuel || ''} onChange={(e: any) => store.setField('ajustementManuel', parseFloat(e.target.value) || 0)} disabled={isEcrasementTotal} placeholder="ex: 50" className="border-blue-500/30" />
-                <Input type="number" step="1" label="Prix final imposé (€) (remplace le calcul systématiquement)" value={store.prixFinalManuel !== null ? store.prixFinalManuel : ''} onChange={(e: any) => {
+                <Input type="number" step="1" label="Prix fixé manuellement (le calcul automatique est ignoré)" value={store.prixFinalManuel !== null ? store.prixFinalManuel : ''} onChange={(e: any) => {
                   const val = e.target.value === '' ? null : parseFloat(e.target.value);
                   store.setField('prixFinalManuel', val);
                 }} placeholder="Prix Forfaitaire" className={`placeholder-opacity-50 ${isEcrasementTotal ? 'border-amber-500/50 bg-amber-500/10 text-amber-100' : 'border-slate-600 bg-slate-800'}`} />
@@ -293,11 +293,11 @@ export function Devis() {
       {/* ========================================================== */}
       {/* BLOC FINAL ULTRA VISIBLE STICKY BOTTOM */}
       {/* ========================================================== */}
-      <div className="fixed bottom-0 left-0 w-full z-50 p-3 md:p-4 pointer-events-none flex justify-center pb-safe">
-        <div className="w-full max-w-5xl bg-slate-900 border-2 border-slate-700/80 rounded-2xl md:rounded-3xl p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] relative overflow-hidden pointer-events-auto backdrop-blur-3xl bg-opacity-95">
+      <div className="fixed bottom-0 left-0 w-full z-50 p-2 md:p-3 pointer-events-none flex justify-center pb-safe">
+        <div className="w-full max-w-4xl bg-slate-900 border-2 border-slate-700/80 rounded-2xl md:rounded-[2rem] p-3 md:p-5 shadow-[0_-10px_30px_rgba(0,0,0,0.9)] relative overflow-hidden pointer-events-auto backdrop-blur-3xl bg-opacity-95">
           
           {/* LIGNE TOP: ACOMPTE & TVA CONFIG */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/50 pb-3 mb-3 gap-3 md:gap-0">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/50 pb-2 mb-2 gap-3 md:gap-0">
              
              <div className="flex items-center gap-3 w-full md:w-auto">
                <label className="flex items-center gap-2 cursor-pointer p-1">
@@ -306,12 +306,13 @@ export function Devis() {
                </label>
                
                {store.acompteDemande && (
-                 <div className="flex items-center gap-1.5 bg-indigo-900/40 px-2 py-1 rounded-lg border border-indigo-500/30">
-                    <div className="w-14">
-                      <Input type="number" step="1" value={store.acomptePourcentage || ''} onChange={(e: any) => store.setField('acomptePourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold text-xs h-7 px-1" />
+                 <div className="flex items-center gap-2 bg-indigo-900/40 px-3 py-1.5 rounded-lg border border-indigo-500/30 shadow-inner">
+                    <span className="text-sm font-bold text-indigo-200 uppercase tracking-widest">Acompte à verser :</span>
+                    <span className="text-lg md:text-xl font-black text-white font-mono">{acompteCalcule.toFixed(2)} €</span>
+                    <div className="w-14 ml-2 hidden sm:block">
+                      <Input type="number" step="1" value={store.acomptePourcentage || ''} onChange={(e: any) => store.setField('acomptePourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold text-xs h-7 px-1 bg-slate-800" />
                     </div>
-                    <span className="text-xs text-indigo-300">%</span>
-                    <span className="text-sm md:text-base font-black text-indigo-200 font-mono ml-1">{acompteCalcule.toFixed(2)} €</span>
+                    <span className="text-xs text-indigo-300 hidden sm:block">%</span>
                  </div>
                )}
              </div>
@@ -337,9 +338,9 @@ export function Devis() {
               <span className="text-lg md:text-xl font-black text-slate-300 font-mono">+{tva.toFixed(2)} €</span>
             </div>
             
-            <div className="flex flex-col flex-1 w-full justify-center items-center py-2 md:py-3 px-4 rounded-xl border border-blue-500/30 bg-blue-500/10 shadow-inner">
-               <span className="text-xs md:text-sm font-black text-blue-400 uppercase tracking-widest mb-0.5">TOTAL TTC</span>
-               <span className="text-4xl md:text-5xl font-black text-white font-mono drop-shadow-lg leading-none">{totalTTC.toFixed(2)} €</span>
+            <div className="flex flex-col flex-1 w-full justify-center items-center py-2 md:py-3 px-4 rounded-xl border border-blue-400/50 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+               <span className="text-xs md:text-sm font-black text-blue-300 uppercase tracking-widest mb-0.5">TOTAL TTC</span>
+               <span className="text-5xl md:text-6xl font-black text-white font-mono drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] leading-none">{totalTTC.toFixed(2)} €</span>
             </div>
           </div>
           
