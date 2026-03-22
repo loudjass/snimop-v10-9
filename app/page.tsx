@@ -11,6 +11,7 @@ import { Devis } from '@/components/steps/Devis';
 import { BonIntervention } from '@/components/steps/BonIntervention';
 import { RapportIntervention } from '@/components/steps/RapportIntervention';
 import { ExportFinal } from '@/components/steps/ExportFinal';
+import { PdfService } from '@/components/pdf/PdfService';
 import { ClipboardList, ClipboardSignature, Wrench, HardHat, FileText, CheckCircle2, Home as HomeIcon } from 'lucide-react';
 
 const steps = [
@@ -54,6 +55,8 @@ export default function Home() {
       />
       {/* Overlay plus prononcé pour contraster avec le verre dépoli blanc/gris des cartes */}
       <div className="fixed inset-0 z-0 bg-[#070b14]/80 backdrop-blur-sm" />
+
+      <PdfService />
 
       <div className="relative z-10 flex flex-col min-h-screen">
         

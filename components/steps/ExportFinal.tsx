@@ -757,40 +757,10 @@ export function ExportFinal() {
     }
   };
 
-  useEffect(() => {
-    (window as any).triggerSpecificPDF = async (type: string) => {
-      try {
-        setIsGenerating(true);
-        const blob = await generateSpecificPdfBlob(type);
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `SNIMOP_${type.toUpperCase()}_${store.numeroAffaire || 'REF'}.pdf`;
-        link.click();
-      } catch (e) {
-        alert("Erreur export.");
-      } finally {
-        setIsGenerating(false);
-      }
-    };
-    return () => { delete (window as any).triggerSpecificPDF; };
-  }, [store]);
+  // Specific PDF trigger logic moved to PdfService.tsx
 
   const handleDownload = async () => {
-    try {
-      setIsGenerating(true);
-      const blob = await generatePdfBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `SNIMOP_Dossier_${store.numeroAffaire || 'SansRef'}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (e: any) {
-      alert("Erreur critique lors de la création du fichier PDF.\n" + (e.message || String(e)));
-    } finally {
-      setIsGenerating(false);
-    }
+    (window as any).triggerGlobalPDF?.();
   };
 
   const handleWhatsApp = async () => {

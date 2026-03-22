@@ -460,9 +460,7 @@ export function Devis() {
         </div>
       )}
 
-      {store.bonPourAccord && (
-        <StepSignatureZone stepKey="devis" title="Devis" />
-      )}
+      <StepSignatureZone stepKey="devis" title="Devis" />
 
       {/* NAVIGATION BOTTOM */}
       <div className="flex justify-between mt-4">
