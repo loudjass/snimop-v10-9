@@ -1,5 +1,5 @@
 "use client";
-// Force Vercel build trigger
+// [2026-03-22] Vercel redeploy trigger for SNIMOP V10.9 branding
 
 import { useDossierStore } from '@/store/useDossierStore';
 import { SnimopLogo } from '@/components/ui/SnimopLogo';
