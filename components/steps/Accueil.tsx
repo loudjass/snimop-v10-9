@@ -39,6 +39,7 @@ export function Accueil() {
 
         <p className="text-slate-300 max-w-sm text-lg font-medium leading-relaxed px-4 mt-2">
           Génération et gestion des documents d&apos;intervention sur chantier.
+          <span className="block text-sm text-emerald-400 mt-2 font-bold font-mono">v1.1 - Déploiement Actif</span>
         </p>
       </div>
 

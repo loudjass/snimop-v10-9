@@ -29,7 +29,6 @@ const loadLogoBase64 = async (): Promise<{img: HTMLImageElement, ratio: number} 
   }
 };
 
-// LOAD REAL PNG MASCOTTE
 const loadMascotteBase64 = async (): Promise<{img: HTMLImageElement, ratio: number} | null> => {
   try {
     return new Promise((resolve) => {
@@ -37,6 +36,19 @@ const loadMascotteBase64 = async (): Promise<{img: HTMLImageElement, ratio: numb
       img.onload = () => resolve({ img, ratio: img.width / img.height });
       img.onerror = () => resolve(null);
       img.src = '/snimop-mascote.png';
+    });
+  } catch (e) {
+    return null;
+  }
+};
+
+const loadPhotoBase64 = async (src: string): Promise<{img: HTMLImageElement, ratio: number} | null> => {
+  try {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ img, ratio: img.width / img.height });
+      img.onerror = () => resolve(null);
+      img.src = src;
     });
   } catch (e) {
     return null;
@@ -66,6 +78,10 @@ export function ExportFinal() {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const logoData = await loadLogoBase64();
       const mascotteData = await loadMascotteBase64();
+      
+      const photoPromises = (store.photos || []).map(p => loadPhotoBase64(p));
+      const loadedPhotosResult = await Promise.all(photoPromises);
+      const validPhotos = loadedPhotosResult.filter(p => p !== null) as {img: HTMLImageElement, ratio: number}[];
 
       // ==========================================
       // PAGE 1 : PAGE DE GARDE (PLUS PRO, MIEUX CENTRÉE)
@@ -366,6 +382,43 @@ export function ExportFinal() {
         pdf.setFontSize(15);
         pdf.setFont("helvetica", "bold");
         pdf.text("BON POUR ACCORD", 120, y + 42);
+      }
+
+      // ==========================================
+      // PAGE PHOTOS (ANNEXE)
+      // ==========================================
+      if (validPhotos.length > 0) {
+        pdf.addPage();
+        y = drawHeader(pdf, "ANNEXE PHOTOS");
+        let currentPhotoY = y + 10;
+        const maxW = 182;
+        const maxH = 110; 
+
+        for (let i = 0; i < validPhotos.length; i++) {
+          const p = validPhotos[i];
+          let drawW = maxW;
+          let drawH = drawW / p.ratio;
+
+          if (drawH > maxH) {
+            drawH = maxH;
+            drawW = drawH * p.ratio;
+          }
+
+          if (currentPhotoY + drawH > 280) {
+            pdf.addPage();
+            currentPhotoY = drawHeader(pdf, "ANNEXE PHOTOS (Suite)");
+            currentPhotoY += 10;
+          }
+
+          const drawX = 14 + (maxW - drawW) / 2;
+          try {
+            pdf.addImage(p.img, 'JPEG', drawX, currentPhotoY, drawW, drawH);
+            pdf.setDrawColor(200, 200, 200);
+            pdf.rect(drawX, currentPhotoY, drawW, drawH);
+          } catch(e) { console.error("Could not add image to PDF", e); }
+
+          currentPhotoY += drawH + 10;
+        }
       }
 
       return pdf.output('blob');

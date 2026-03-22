@@ -56,57 +56,61 @@ export default function Home() {
       <div className="fixed inset-0 z-0 bg-[#070b14]/80 backdrop-blur-sm" />
 
       <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Header premium avec logo SNIMOP principal */}
-        <header className="bg-slate-900/60 backdrop-blur-xl border-b border-white/5 p-4 sticky top-0 z-50 flex items-center min-h-[76px] px-6">
-          <div className="flex-1 flex justify-start">
-            {currentStep > 0 && (
-              <button
-                onClick={() => setField('currentStep', 0)}
-                className="flex items-center justify-center p-2.5 rounded-full bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-sm border border-white/5"
-                title="Retour à l'accueil"
-              >
-                <HomeIcon className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-          <SnimopLogo useGradient className="w-[160px] md:w-[200px] h-[35px] md:h-[45px] mx-auto flex-shrink-0" />
-          <div className="flex-1 flex justify-end">
-            <img
-              src="/snimop-mascote.png"
-              alt=""
-              className="h-10 w-auto object-contain opacity-90 transition-all hover:scale-105 hover:opacity-100"
-            />
-          </div>
-        </header>
-
-        {/* Stepper Premium */}
-        {currentStep > 0 && currentStep <= 6 && (
-          <div className="bg-slate-900/50 backdrop-blur-lg border-b border-white/5 py-4 px-2 mb-6 overflow-x-auto shadow-xl sticky top-[60px] z-40">
-            <div className="flex items-center min-w-max px-2 justify-between max-w-3xl mx-auto">
-              {steps.map((step, idx) => (
-                <div key={step.id} className="flex items-center flex-1">
-                  <div
-                    className={`flex flex-col items-center justify-center cursor-pointer transition-all duration-300 w-full ${currentStep === step.id ? 'text-blue-400 scale-110' : currentStep > step.id ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-400'
-                      }`}
-                    onClick={() => setField('currentStep', step.id)}
-                  >
-                    <div className={`p-2.5 rounded-full mb-1 flex items-center justify-center shadow-inner transition-colors ${currentStep === step.id ? 'bg-blue-500/20 ring-1 ring-blue-400/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : currentStep > step.id ? 'bg-emerald-500/10' : 'bg-slate-800/40'
-                      }`}>
-                      {step.icon}
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest">{step.title}</span>
-                  </div>
-                  {idx < steps.length - 1 && (
-                    <div className={`w-full h-[2px] mx-1 flex-1 rounded-full transition-colors ${currentStep > step.id ? 'bg-emerald-500/40 shadow-[0_0_5px_rgba(16,185,129,0.3)]' : 'bg-slate-700/30'}`} />
-                  )}
-                </div>
-              ))}
+        
+        {/* SINGLE WRAPPER FOR BOTH STICKY ELEMENTS TO ENSURE FLAWLESS SCROLLING */}
+        <div className="sticky top-0 z-50 w-full flex flex-col shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]">
+          {/* Header premium avec logo SNIMOP principal */}
+          <header className="bg-slate-900/95 backdrop-blur-md border-b border-white/10 p-4 flex items-center h-[76px] px-6">
+            <div className="flex-1 flex justify-start">
+              {currentStep > 0 && (
+                <button
+                  onClick={() => setField('currentStep', 0)}
+                  className="flex items-center justify-center p-2.5 rounded-full bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-sm border border-white/5"
+                  title="Retour à l'accueil"
+                >
+                  <HomeIcon className="w-5 h-5" />
+                </button>
+              )}
             </div>
-          </div>
-        )}
+            <SnimopLogo useGradient className="w-[160px] md:w-[200px] h-[35px] md:h-[45px] mx-auto flex-shrink-0" />
+            <div className="flex-1 flex justify-end">
+              <img
+                src="/snimop-mascote.png"
+                alt=""
+                className="h-10 w-auto object-contain opacity-90 transition-all hover:scale-105 hover:opacity-100"
+              />
+            </div>
+          </header>
+
+          {/* Stepper Premium */}
+          {currentStep > 0 && currentStep <= 6 && (
+            <div className="bg-slate-900/95 backdrop-blur-md border-b border-white/10 py-4 px-2 overflow-x-auto">
+              <div className="flex items-center min-w-max px-2 justify-between max-w-3xl mx-auto">
+                {steps.map((step, idx) => (
+                  <div key={step.id} className="flex items-center flex-1">
+                    <div
+                      className={`flex flex-col items-center justify-center cursor-pointer transition-all duration-300 w-full ${currentStep === step.id ? 'text-blue-400 scale-110' : currentStep > step.id ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-400'
+                        }`}
+                      onClick={() => setField('currentStep', step.id)}
+                    >
+                      <div className={`p-2.5 rounded-full mb-1 flex items-center justify-center shadow-inner transition-colors ${currentStep === step.id ? 'bg-blue-500/20 ring-1 ring-blue-400/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : currentStep > step.id ? 'bg-emerald-500/10' : 'bg-slate-800/40'
+                        }`}>
+                        {step.icon}
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">{step.title}</span>
+                    </div>
+                    {idx < steps.length - 1 && (
+                      <div className={`w-full h-[2px] mx-1 flex-1 rounded-full transition-colors ${currentStep > step.id ? 'bg-emerald-500/40 shadow-[0_0_5px_rgba(16,185,129,0.3)]' : 'bg-slate-700/30'}`} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Main Content */}
-        <main className="max-w-3xl mx-auto px-4 w-full flex-1">
+        <main className="max-w-3xl mx-auto px-4 w-full flex-1 pt-6">
           {renderStep()}
         </main>
       </div>
