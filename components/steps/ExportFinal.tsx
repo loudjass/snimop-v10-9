@@ -482,6 +482,29 @@ export function ExportFinal() {
       </h2>
       <div className="bg-[#0f172a]/70 backdrop-blur-2xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-700/50 flex flex-col gap-8 mt-2">
 
+        {/* Pre-export summary */}
+        <div className="bg-slate-800/50 border border-slate-600 rounded-2xl p-4 text-sm text-slate-300">
+          <h4 className="font-bold text-white mb-2 pb-2 border-b border-slate-700">Résumé avant export</h4>
+          <ul className="flex flex-col gap-2 mt-2">
+            <li className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-400" />
+              <span>Document principal : <strong className="text-white">{store.typeDoc}</strong></span>
+            </li>
+            <li className="flex items-center gap-2">
+              {store.signatureClient && store.signatureClient.startsWith('data:image') ? (
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <div className="w-4 h-4 rounded-full border border-amber-400 bg-amber-400/20" />
+              )}
+              <span>Signature client : <strong className={store.signatureClient ? "text-emerald-400" : "text-amber-400"}>{store.signatureClient ? "Présente" : "Manquante (Optionnelle)"}</strong></span>
+            </li>
+            <li className="flex items-center gap-2">
+              <CheckCircle className={store.photos && store.photos.length > 0 ? "w-4 h-4 text-emerald-400" : "w-4 h-4 text-slate-500"} />
+              <span>Photos jointes : <strong className="text-white">{store.photos ? store.photos.length : 0}</strong></span>
+            </li>
+          </ul>
+        </div>
+
         <div className="border border-slate-300 rounded-3xl p-6 bg-slate-50 shadow-inner flex flex-col gap-5 relative overflow-hidden">
           <div className="absolute top-0 w-full h-2 bg-gradient-to-r from-blue-500 to-green-500 left-0" />
           <h3 className="font-black flex items-center gap-2 text-xl text-slate-800 uppercase tracking-wide">

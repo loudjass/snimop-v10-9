@@ -1,6 +1,7 @@
 "use client";
 // [2026-03-22] Vercel redeploy trigger for SNIMOP V10.9 branding ok
 
+import React, { useEffect } from 'react';
 import { useDossierStore } from '@/store/useDossierStore';
 import { SnimopLogo } from '@/components/ui/SnimopLogo';
 import { Accueil } from '@/components/steps/Accueil';
@@ -24,6 +25,11 @@ const steps = [
 export default function Home() {
   const currentStep = useDossierStore((state) => state.currentStep);
   const setField = useDossierStore((state) => state.setField);
+  
+  // Mission 5: Auto-scroll en haut au changement d'étape
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
 
   const renderStep = () => {
     switch (currentStep) {

@@ -30,9 +30,13 @@ export function DocumentTemplate() {
         </div>
 
       {/* Document Title */}
-      <div className="text-center mb-8 bg-blue-50 py-3 rounded-sm border border-blue-100">
+      <div className="text-center mb-8 bg-blue-50 py-3 rounded-sm border border-blue-100 flex flex-col gap-1">
         <h2 className="text-2xl font-bold uppercase tracking-wider text-blue-900">{store.typeDoc}</h2>
-        <p className="text-sm font-medium mt-1">Intervention : {store.objet}</p>
+        <div className="flex justify-center gap-4 text-sm font-medium mt-1 text-gray-700">
+          <p>Intervention : {store.objet}</p>
+          {store.interventionType && <p>• Type : <span className="font-bold">{store.interventionType}</span></p>}
+          {store.statutDossier && <p>• Statut : <span className="font-bold text-blue-800 uppercase">{store.statutDossier}</span></p>}
+        </div>
       </div>
 
       {/* Client Info Grid */}
@@ -94,6 +98,9 @@ export function DocumentTemplate() {
         {store.typeDoc === "BON D'INTERVENTION" && (
           <>
             <Section title="Date prévue" content={store.dateIntervention} />
+            <div className="grid grid-cols-2 gap-4">
+              <Section title="Horaires prévus" content={store.heureDebut && store.heureFin ? `De ${store.heureDebut} à ${store.heureFin}` : ''} />
+            </div>
             <Section title="Nature des travaux" content={store.natureTravaux} />
             <Section title="Matériel prévu" content={store.materielPrevu} />
             <Section title="Consignes / Remarques" content={store.consignes} />
@@ -106,7 +113,8 @@ export function DocumentTemplate() {
             <Section title="Travaux réalisés" content={store.travauxRealises} />
             <Section title="Matériel utilisé" content={store.materielUtilise} />
             <div className="grid grid-cols-2 gap-4">
-              <Section title="Temps passé" content={store.tempsPasse} />
+              <Section title="Horaires" content={store.heureDebut && store.heureFin ? `De ${store.heureDebut} à ${store.heureFin}` : ''} />
+              <Section title="Durée (Heures)" content={store.dureeReelle || store.tempsPasse} />
               <Section title="Anomalies constatées" content={store.anomalies} />
             </div>
             <Section title="Réserves" content={store.rapportReserves} />
@@ -119,7 +127,9 @@ export function DocumentTemplate() {
       <div className="mt-8 flex justify-end">
         <div className="w-1/2 border p-4 rounded-md min-h-[200px] flex flex-col relative bg-gray-50">
           <p className="font-bold text-sm mb-1 text-gray-700">Signature Client</p>
-          <p className="text-xs text-gray-500 mb-2">Nom : {store.nomSignataireClient || store.contact || store.client}</p>
+          <p className="text-xs text-gray-500 mb-2">
+            Nom : {store.nomSignataireClient || store.contact || store.client} {store.fonctionSignataire && `(${store.fonctionSignataire})`}
+          </p>
           {store.signatureClient ? (
             <img src={store.signatureClient} alt="" className="max-h-32 object-contain mix-blend-multiply" />
           ) : (
@@ -127,6 +137,24 @@ export function DocumentTemplate() {
           )}
         </div>
       </div>
+      
+      {/* Photos Annexes */}
+      {store.photos && store.photos.length > 0 && (
+        <div className="mt-12" style={{ pageBreakBefore: 'always' }}>
+          <div className="flex justify-between items-end border-b-2 border-blue-900 pb-4 mb-6">
+            <h2 className="text-2xl font-bold uppercase tracking-wider text-blue-900">ANNEXE PHOTOS</h2>
+            <p className="text-sm font-bold text-gray-500">Dossier N° {store.numeroAffaire}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {store.photos.map((photo, idx) => (
+              <div key={idx} className="border border-gray-300 rounded-md overflow-hidden aspect-video flex items-center justify-center bg-gray-50 p-2">
+                <img src={photo} alt={`Annexe ${idx + 1}`} className="max-w-full max-h-full object-contain" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       </div>
     </div>
   );

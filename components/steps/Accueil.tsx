@@ -46,7 +46,13 @@ export function Accueil() {
         <Button 
           className="py-5 text-lg shadow-xl shadow-blue-900/40 border border-blue-400/30 rounded-2xl"
           onClick={() => {
-            useDossierStore.getState().startNewDossier();
+            if (hasDraft) {
+              if (window.confirm("Un dossier est déjà en cours. Voulez-vous vraiment l'écraser pour commencer un nouveau dossier ?")) {
+                useDossierStore.getState().startNewDossier();
+              }
+            } else {
+              useDossierStore.getState().startNewDossier();
+            }
           }}
         >
           <FilePlus className="w-6 h-6 mr-2" />
@@ -58,6 +64,7 @@ export function Accueil() {
             variant="secondary"
             className="py-5 text-lg rounded-2xl"
             onClick={() => {
+              // Aller à l'étape 1 ou l'étape la plus avancée
               setField('currentStep', 1); 
             }}
           >

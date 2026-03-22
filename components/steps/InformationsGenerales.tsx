@@ -30,8 +30,40 @@ export function InformationsGenerales() {
         </div>
         
         <Input label="Email" type="email" value={store.email} onChange={(e: any) => store.setField('email', e.target.value)} placeholder="contact@email.com" />
-        <Input label="Technicien" value={store.technicien} onChange={(e: any) => store.setField('technicien', e.target.value)} placeholder="Votre nom" />
-        <Input label="Objet / Intitulé intervention" value={store.objet} onChange={(e: any) => store.setField('objet', e.target.value)} placeholder="Titre de la mission" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Technicien" value={store.technicien} onChange={(e: any) => store.setField('technicien', e.target.value)} placeholder="Votre nom" />
+          <div className="flex flex-col gap-1.5 mt-2">
+            <label className="text-sm font-bold text-slate-300 ml-1">Type d'intervention</label>
+            <select 
+              className="px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 bg-slate-900/60 backdrop-blur-sm border border-white/10 text-white font-medium w-full shadow-inner"
+              value={store.interventionType}
+              onChange={(e) => store.setField('interventionType', e.target.value)}
+            >
+              <option value="" disabled className="bg-slate-800 text-slate-400">Sélectionner...</option>
+              <option value="Dépannage" className="bg-slate-800 text-white">Dépannage</option>
+              <option value="Maintenance" className="bg-slate-800 text-white">Maintenance</option>
+              <option value="Installation" className="bg-slate-800 text-white">Installation</option>
+              <option value="Devis" className="bg-slate-800 text-white">Devis / Étude</option>
+              <option value="Autre" className="bg-slate-800 text-white">Autre</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Objet / Intitulé intervention" value={store.objet} onChange={(e: any) => store.setField('objet', e.target.value)} placeholder="Titre de la mission" />
+          <div className="flex flex-col gap-1.5 mt-2">
+            <label className="text-sm font-bold text-slate-300 ml-1">Statut du dossier</label>
+            <select 
+              className="px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 bg-slate-900/60 backdrop-blur-sm border border-white/10 text-white font-medium w-full shadow-inner"
+              value={store.statutDossier}
+              onChange={(e) => store.setField('statutDossier', e.target.value)}
+            >
+              <option value="En cours" className="bg-slate-800 text-white">En cours</option>
+              <option value="Terminé" className="bg-slate-800 text-white">Terminé</option>
+              <option value="Signé" className="bg-slate-800 text-white">Signé</option>
+            </select>
+          </div>
+        </div>
         
         <div className="flex flex-col gap-1.5 mt-2">
           <label className="text-sm font-bold text-slate-300 ml-1">Type de document principal</label>

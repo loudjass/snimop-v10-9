@@ -33,7 +33,13 @@ export function BonIntervention() {
       </p>
       
       <div className="bg-[#0f172a]/70 backdrop-blur-2xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-700/50 flex flex-col gap-6">
-        <Input label="Date d'intervention prévue" type="date" value={store.dateIntervention} onChange={(e: any) => store.setField('dateIntervention', e.target.value)} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Date d'intervention prévue" type="date" value={store.dateIntervention} onChange={(e: any) => store.setField('dateIntervention', e.target.value)} />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Heure d'arrivée" type="time" value={store.heureDebut} onChange={(e: any) => store.setField('heureDebut', e.target.value)} />
+            <Input label="Heure de départ" type="time" value={store.heureFin} onChange={(e: any) => store.setField('heureFin', e.target.value)} />
+          </div>
+        </div>
         <Textarea label="Nature des travaux à réaliser" value={store.natureTravaux} onChange={(e: any) => store.setField('natureTravaux', e.target.value)} />
         <Textarea label="Matériel prévu" value={store.materielPrevu} onChange={(e: any) => store.setField('materielPrevu', e.target.value)} />
         <Textarea label="Consignes / Remarques de préparation" value={store.consignes} onChange={(e: any) => store.setField('consignes', e.target.value)} />

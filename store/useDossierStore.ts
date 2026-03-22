@@ -14,6 +14,8 @@ export interface DossierState {
   technicien: string;
   objet: string;
   typeDoc: string;
+  interventionType: string;
+  statutDossier: string;
 
   contexte: string;
   constat: string;
@@ -40,6 +42,9 @@ export interface DossierState {
   materielPrevu: string;
   natureTravaux: string;
   consignes: string;
+  heureDebut: string;
+  heureFin: string;
+  dureeReelle: string;
 
   natureReelle: string;
   travauxRealises: string;
@@ -49,7 +54,9 @@ export interface DossierState {
   rapportReserves: string;
   observationsFinales: string;
   nomSignataireClient: string;
+  fonctionSignataire: string;
   signatureClient: string;
+  photos: string[];
   currentStep: number;
 
   setField: (field: keyof DossierState, value: any) => void;
@@ -69,6 +76,8 @@ const initialState = {
   technicien: '',
   objet: '',
   typeDoc: 'VISITE AVANT DEVIS',
+  interventionType: '',
+  statutDossier: 'en cours',
 
   contexte: '',
   constat: '',
@@ -95,6 +104,9 @@ const initialState = {
   materielPrevu: '',
   natureTravaux: '',
   consignes: '',
+  heureDebut: '',
+  heureFin: '',
+  dureeReelle: '',
 
   natureReelle: '',
   travauxRealises: '',
@@ -104,7 +116,9 @@ const initialState = {
   rapportReserves: '',
   observationsFinales: '',
   nomSignataireClient: '',
+  fonctionSignataire: 'Client',
   signatureClient: '',
+  photos: [],
   currentStep: 0,
 };
 
