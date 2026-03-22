@@ -4,8 +4,40 @@ import { useDossierStore } from '@/store/useDossierStore';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, ArrowRight, Calculator, Euro, HardHat, Truck, Zap, Eye, Settings2, Users, ChevronUp, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calculator, Euro, HardHat, Truck, Zap, Eye, Settings2, Users, ChevronUp, X, Download } from 'lucide-react';
 import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
+
+const TVAPresetSelector = ({ value, onChange }: { value: number, onChange: (v: number) => void }) => {
+  const presets = [20, 10, 5.5];
+  const isCustom = !presets.includes(value);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex bg-slate-800/50 p-1.5 rounded-2xl border border-slate-700/50 gap-1">
+        {presets.map((p) => (
+          <button
+            key={p}
+            onClick={() => onChange(p)}
+            className={`flex-1 py-2 text-sm font-black rounded-xl transition-all ${value === p ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-750'}`}
+          >
+            {p}%
+          </button>
+        ))}
+        <div className={`flex items-center gap-1 px-2 py-1 rounded-xl transition-all ${isCustom ? 'bg-amber-600 text-white shadow-lg' : 'text-slate-500'}`}>
+          <span className="text-[10px] font-black uppercase tracking-tighter">Autre:</span>
+          <input
+            type="number"
+            step="0.1"
+            value={isCustom ? value : ''}
+            onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+            placeholder="%"
+            className="w-12 bg-transparent border-none text-center font-black focus:ring-0 p-0 text-sm placeholder:text-slate-600"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export function Devis() {
   const store = useDossierStore();
@@ -336,13 +368,26 @@ export function Devis() {
                <span>💰</span> 3. Ajustement Chantier & TVA
             </div>
             
-            {/* BADGE DE MODE ACTIF */}
-            <div className={`text-[10px] font-black px-3 py-1 rounded-full border ${
-              calcMode === 'IMPOSÉ' ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' :
-              calcMode === 'AJUSTÉ' ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400' :
-              'bg-blue-500/10 border-blue-500/20 text-blue-500/60'
-            }`}>
-              MODE {calcMode}
+            <div className="flex items-center gap-2">
+               {/* BOUTON EXPORT INDIVIDUEL */}
+               <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 px-2 bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
+                onClick={() => (window as any).triggerSpecificPDF?.('devis')}
+               >
+                 <Download className="w-4 h-4 mr-1" />
+                 PDF Devis
+               </Button>
+
+               {/* BADGE DE MODE ACTIF */}
+               <div className={`text-[10px] font-black px-3 py-1 rounded-full border ${
+                 calcMode === 'IMPOSÉ' ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' :
+                 calcMode === 'AJUSTÉ' ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400' :
+                 'bg-blue-500/10 border-blue-500/20 text-blue-500/60'
+               }`}>
+                 MODE {calcMode}
+               </div>
             </div>
           </h3>
 
@@ -465,17 +510,17 @@ export function Devis() {
               </div>
 
               <div className="flex flex-col gap-3 p-4 bg-slate-800/80 rounded-2xl border border-indigo-500/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-black text-indigo-300 uppercase tracking-wider">TVA ({store.tvaPourcentage}%)</span>
-                  <div className="w-24">
-                    <Input 
-                      type="number" 
-                      step="0.1" 
-                      value={store.tvaPourcentage || ''} 
-                      onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} 
-                      className="text-center font-black bg-slate-900 border-indigo-500" 
-                    />
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-sm font-black text-indigo-300 uppercase tracking-widest flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-amber-400" /> Taux de TVA
+                    </span>
+                    <span className="text-xs font-bold text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">{store.tvaPourcentage || 0}%</span>
                   </div>
+                  <TVAPresetSelector 
+                    value={store.tvaPourcentage || 0} 
+                    onChange={(v) => store.setField('tvaPourcentage', v)} 
+                  />
                 </div>
                 <div className="flex justify-between items-center bg-black/20 p-2 rounded-lg">
                   <span className="text-xs font-bold text-slate-400">Montant TVA (€)</span>
@@ -512,15 +557,16 @@ export function Devis() {
                 <span className="text-xl font-bold text-slate-200 font-mono">{prixRetenuHT.toFixed(2)}€</span>
               </div>
               
-              {/* TVA DISPLAY & INPUT */}
-              <div className="flex flex-col group">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">TVA ({store.tvaPourcentage}%)</span>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-lg font-extrabold text-slate-300 font-mono">+{tva.toFixed(2)}€</span>
-                  <div className="w-14 opacity-50 group-hover:opacity-100 transition-opacity">
-                    <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-black bg-slate-800/80 border-slate-700 h-7 px-1 text-xs rounded-lg" />
-                  </div>
+              {/* TVA DISPLAY & QUICK SELECTOR */}
+              <div className="flex flex-col gap-1 min-w-[200px]">
+                <div className="flex items-center justify-between pr-2">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">TVA Applicables</span>
+                  <span className="text-sm font-extrabold text-slate-200 font-mono">+{tva.toFixed(2)}€</span>
                 </div>
+                <TVAPresetSelector 
+                  value={store.tvaPourcentage || 0} 
+                  onChange={(v) => store.setField('tvaPourcentage', v)} 
+                />
               </div>
 
               {/* ACOMPTE (Si activé) */}

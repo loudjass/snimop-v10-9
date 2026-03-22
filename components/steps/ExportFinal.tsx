@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDossierStore } from '@/store/useDossierStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -10,6 +10,13 @@ import { format, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 import { SNIMOP_LOGO_PATH } from '@/components/ui/SnimopLogo';
+import { 
+  drawDevisSection, 
+  drawRapportSection, 
+  drawInformationsSection, 
+  drawVisiteSection, 
+  drawInterventionSection 
+} from '@/utils/pdfSectionDrawers';
 
 // LOAD REAL PNG LOGO AVEC RATIO NATUREL
 const loadLogoBase64 = async (): Promise<{img: HTMLImageElement, ratio: number} | null> => {
@@ -170,35 +177,33 @@ export function ExportFinal() {
         } catch(e) { console.error("Watermark error", e); }
       }
 
-      // ==========================================
-      // EN-TÊTE INTÉRIEUR (COMPACT)
-      // ==========================================
+      // EN-TÊTE INTÉRIEUR
       const drawHeader = (pageContextPdf: jsPDF, pageTitle: string) => {
-        // Sécurité visuelle avant l'en-tête
         pageContextPdf.setFillColor(255, 255, 255);
         pageContextPdf.rect(0, 0, 210, 40, 'F');
-
-        // Logo TOP LEFT (Respect Ratio)
+        
         let lastLogoEndX = 14;
+
         if (logoData && logoData.img) {
-          let targetWidth = 53; // Légèrement agrandi
+          let targetWidth = 53; 
           let targetHeight = targetWidth / logoData.ratio;
-          // Sécurité anti-chevauchement si le logo s'avère haut
+          
           if (targetHeight > 25) {
             targetHeight = 25;
             targetWidth = targetHeight * logoData.ratio;
           }
+          
           pageContextPdf.addImage(logoData.img, 'PNG', 14, 10, targetWidth, targetHeight);
           lastLogoEndX = 14 + targetWidth;
         }
 
-        // MASCOTTE HEADER SUPPRIMÉE - Remplacée par un Watermark global centré
+        // WATERMARK DISCRET AU CENTRE DE CHAQUE PAGE
         if (mascotteData && mascotteData.img) {
           try {
             const wWidth = 130;
             const wHeight = wWidth / mascotteData.ratio;
             const wX = (210 - wWidth) / 2;
-            const wY = (297 - wHeight) / 2; // Centre exact de la page
+            const wY = (297 - wHeight) / 2;
             
             pageContextPdf.saveGraphicsState();
             pageContextPdf.setGState(new (pageContextPdf as any).GState({ opacity: 0.06 }));
@@ -207,7 +212,6 @@ export function ExportFinal() {
           } catch(e) {}
         }
 
-        // CONTEXTE DOSSIER TOP RIGHT
         pageContextPdf.setTextColor(100, 100, 100);
         pageContextPdf.setFontSize(10);
         pageContextPdf.setFont("helvetica", "bold");
@@ -216,155 +220,174 @@ export function ExportFinal() {
         pageContextPdf.setFontSize(9);
         pageContextPdf.setFont("helvetica", "normal");
         let headerY = 19;
-        
         if (store.client && store.client.trim() !== '') {
           pageContextPdf.text(`Client : ${store.client}`, 196, headerY, { align: 'right' });
           headerY += 5;
-        } else if (store.site && store.site.trim() !== '') {
+        }
+        if (store.site && store.site.trim() !== '') {
           pageContextPdf.text(`Chantier : ${store.site}`, 196, headerY, { align: 'right' });
           headerY += 5;
         }
-        
-        if (store.client && store.site && store.site.trim() !== '') {
-          pageContextPdf.text(`Chantier : ${store.site}`, 196, headerY, { align: 'right' });
-          headerY += 5;
-        }
-
         pageContextPdf.text(`Date : ${getSafeDateShort(store.date)}`, 196, headerY, { align: 'right' });
 
-        // TITRE METIER EN DESSOUS (Espacé du logo)
         pageContextPdf.setTextColor(30, 58, 138);
         pageContextPdf.setFontSize(16);
         pageContextPdf.setFont("helvetica", "bold");
         pageContextPdf.text(pageTitle.toUpperCase(), 14, 44);
         
-        // Fine separator
         pageContextPdf.setDrawColor(200, 200, 200);
         pageContextPdf.setLineWidth(0.3);
         pageContextPdf.line(14, 48, 196, 48);
-        
-        return 58; // Breathing room de départ au lieu de 48
+
+        return 58; 
       };
 
-      let y = 58;
-
-      // Un peu aéré verticalement (+8px au lieu de 5) pour les textes
       const addSection = (title: string, content?: string | number, halfWidth: boolean = false, xPos: number = 14) => {
         let text = String(content || '').trim();
-        if (!text) text = "Non renseigné";
-        if (y > 270) {
+        if (!text || text === "undefined" || text === "null") text = "Non renseigné";
+
+        // @ts-ignore
+        if (pdf.internal.getCurrentPageInfo().pageNumber > 0 && (pdf as any).getY?.() > 270) {
           pdf.addPage();
-          y = drawHeader(pdf, "Suite...");
+          drawHeader(pdf, "Suite...");
         }
+
         pdf.setFontSize(11);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(30, 58, 138);
-        pdf.text(title.toUpperCase(), xPos, y);
-        y += 7; // Plus aéré
+        // @ts-ignore
+        const currentY = (pdf as any).getY ? (pdf as any).getY() : 58;
+        pdf.text(title.toUpperCase(), xPos, currentY);
+
+        const nextY = currentY + 7;
         pdf.setFontSize(11);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(50, 50, 50);
+
         const ObjectifWidth = halfWidth ? 85 : 182;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
-        pdf.text(lines, xPos, y);
-        return y + (lines.length * 6) + 16; // Plus de respiration entre les blocs
+        pdf.text(lines, xPos, nextY);
+
+        const finalY = nextY + (lines.length * 6) + 16;
+        // @ts-ignore
+        if ((pdf as any).setY) (pdf as any).setY(finalY);
+        return finalY;
       };
 
       const addSectionAt = (title: string, content: string | number | undefined, xPos: number, startY: number, halfWidth: boolean = false) => {
         let text = String(content || '').trim();
-        if (!text) text = "Non renseigné";
+        if (!text || text === "undefined") text = "Non renseigné";
+        
         let localY = startY;
         pdf.setFontSize(11);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(30, 58, 138); 
         pdf.text(title.toUpperCase(), xPos, localY);
-        localY += 7; // Plus aéré
+
+        localY += 7;
         pdf.setFontSize(11);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(50, 50, 50);
+
         const ObjectifWidth = halfWidth ? 85 : 182;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
         pdf.text(lines, xPos, localY);
-        return localY + (lines.length * 6) + 16; // breathing room
+
+        return localY + (lines.length * 6) + 16;
       };
 
       const addStepSignature = (stepKey: string, stepTitle: string) => {
         const sig = store.stepSignatures?.[stepKey];
         if (!sig) return;
+
+        // @ts-ignore
+        let currentY = (pdf as any).getY ? (pdf as any).getY() : 100;
         
-        // Calcul strict du bloc complet : 50mm de haut
-        if (y + 55 > 280) { 
+        // Anti-debordement
+        if (currentY + 55 > 280) { 
           pdf.addPage(); 
-          y = drawHeader(pdf, stepTitle + " (Validation)"); 
+          currentY = drawHeader(pdf, stepTitle + " (Validation)"); 
         }
-        y += 5;
+
+        currentY += 5;
         pdf.setDrawColor(200, 200, 200);
         pdf.setLineWidth(0.5);
-        pdf.line(14, y, 196, y);
-        y += 8;
+        pdf.line(14, currentY, 196, currentY);
+
+        currentY += 8;
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(30, 58, 138);
-        pdf.text("--- VALIDATION DE L'ÉTAPE ---", 105, y, { align: 'center' });
-        y += 8;
-      
+        pdf.text("--- VALIDATION DE L'ÉTAPE ---", 105, currentY, { align: 'center' });
+
+        currentY += 8;
         pdf.setFontSize(9);
         pdf.setTextColor(80, 80, 80);
-        pdf.text(`Technicien : ${sig.technicienNom || '-'}`, 14, y);
+        pdf.text(`Technicien : ${sig.technicienNom || '-'}`, 14, currentY);
         if (sig.technicienSignature && sig.technicienSignature.startsWith('data:image')) {
-          pdf.addImage(sig.technicienSignature, 'PNG', 14, y + 2, 35, 12);
+          pdf.addImage(sig.technicienSignature, 'PNG', 14, currentY + 2, 35, 12);
         }
-        
-        pdf.text(`Client : ${sig.clientNom || '-'}`, 110, y);
+
+        pdf.text(`Client : ${sig.clientNom || '-'}`, 110, currentY);
         if (sig.clientSignature && sig.clientSignature.startsWith('data:image')) {
-          pdf.addImage(sig.clientSignature, 'PNG', 110, y + 2, 35, 12);
+          pdf.addImage(sig.clientSignature, 'PNG', 110, currentY + 2, 35, 12);
         }
-        
-        y += 18;
+
+        currentY += 25;
         if (sig.dateSignature) {
           pdf.setFont("helvetica", "italic");
           pdf.setFontSize(8);
           // @ts-ignore
-          pdf.text(`Signé le ${new Date(sig.dateSignature).toLocaleString('fr-FR')}`, 105, y, { align: 'center' });
+          pdf.text(`Signé le ${new Date(sig.dateSignature).toLocaleString('fr-FR')}`, 105, currentY, { align: 'center' });
         }
-        y += 10;
+
+        // @ts-ignore
+        if ((pdf as any).setY) (pdf as any).setY(currentY + 10);
       };
 
-      // PAGE 2
+      // PAGE 2 : INFOS GÉNÉRALES
       pdf.addPage();
-      y = drawHeader(pdf, "INFORMATIONS GÉNÉRALES SNIMOP");
+      let y = drawHeader(pdf, "INFORMATIONS GÉNÉRALES SNIMOP");
       let yTopLine = y;
-      let yL = addSectionAt("Client", `Nom: ${store.client || 'Non renseigné'}\nContact: ${store.contact || '-'}\nTél: ${store.telephone || '-'}\nEmail: ${store.email || '-'}`, 14, yTopLine, true);
-      let yR = addSectionAt("Chantier", `Site: ${store.site || 'Non renseigné'}\nAdresse: ${store.adresse || '-'}\nTechnicien: ${store.technicien || '-'}`, 110, yTopLine, true);
+      let yL = addSectionAt("Client", `Nom : ${store.client || 'Non renseigné'}\nContact : ${store.contact || '-'}\nTél : ${store.telephone || '-'}\nEmail : ${store.email || '-'}`, 14, yTopLine, true);
+      let yR = addSectionAt("Chantier", `Site : ${store.site || 'Non renseigné'}\nAdresse : ${store.adresse || '-'}\nTechnicien assigné : ${store.technicien || '-'}`, 110, yTopLine, true);
+      
       y = Math.max(yL, yR) + 5;
       pdf.setDrawColor(230, 230, 230);
       pdf.line(14, y - 5, 196, y - 5);
+      
       y = addSection("Objet de l'intervention", store.objet);
+      
       addStepSignature('informations', "INFORMATIONS GÉNÉRALES");
 
-      // PAGE 3
+      // PAGE 3 : VISITE TECHNIQUE
       pdf.addPage();
       y = drawHeader(pdf, "VISITE AVANT DEVIS SNIMOP");
+      
       y = addSection("Contexte et Constat", store.constat || store.contexte);
       y = addSection("Équipement concerné", store.equipement);
-      y = addSection("Observations", store.observations); 
-      y = addSection("Travaux à réaliser", store.travauxPreconises);
-      y = addSection("Matériel nécessaire", store.materielEnvisage);
-      yTopLine = y;
-      yL = addSectionAt("Main d'œuvre estimée", store.moEstimee, 14, yTopLine, true);
-      yR = addSectionAt("Déplacement", store.deplacement, 110, yTopLine, true);
-      y = Math.max(yL, yR);
+      y = addSection("Observations détaillées", store.observations); 
+      y = addSection("Travaux à réaliser préconisés", store.travauxPreconises);
+      y = addSection("Matériel nécessaire envisagé", store.materielEnvisage);
+      
+      let yVTop = y;
+      let yVL = addSectionAt("Main d'œuvre estimée", store.moEstimee, 14, yVTop, true);
+      let yVR = addSectionAt("Déplacement", store.deplacement, 110, yVTop, true);
+      y = Math.max(yVL, yVR);
+      
       y = addSection("Option nacelle", store.optionNacelle);
-      y = addSection("Remarques", store.remarques);
+      y = addSection("Remarques complémentaires", store.remarques);
+      
       addStepSignature('visite', "VISITE AVANT DEVIS");
 
-      // PAGE 4
+      // PAGE 4 : DEVIS (OPTIONNEL MAIS PRÉSENT)
       pdf.addPage();
       const prestationStr = store.prestationType ? store.prestationType.replace('_', ' + ').toUpperCase() : 'NON DÉFINI';
       y = drawHeader(pdf, `DEVIS SNIMOP - ${prestationStr}`);
-      y = addSection("Descriptif des travaux", store.descriptifTravaux);
-      y = addSection("Matériel prévu", store.devisMateriel);
-      y = addSection("Réserves / Exclusions", store.reserves);
+      
+      y = addSection("Descriptif technique des prestations", store.descriptifTravaux);
+      y = addSection("Détail du matériel prévu", store.devisMateriel);
+      y = addSection("Réserves et Exclusions", store.reserves);
 
       // Moteur de calcul PDF
       const totalMoHT = (store.tauxHoraireMO || 0) * (store.heuresMO || 0);
@@ -379,7 +402,6 @@ export function ExportFinal() {
       const totalTTC = prixRetenuHT + tva;
       const acompteCalcule = store.acompteDemande ? totalTTC * ((store.acomptePourcentage || 0) / 100) : 0;
 
-      // Vérification espace (nécessite ~65mm)
       if (y > 215) { pdf.addPage(); y = drawHeader(pdf, `DEVIS SNIMOP - ${prestationStr} (Suite)`); }
       else { y += 5; }
 
@@ -398,27 +420,24 @@ export function ExportFinal() {
       pdf.setFontSize(10);
       pdf.setTextColor(60, 60, 60);
 
-      // Mode detection for PDF
       const calcMode = isEcrasementTotal ? 'IMPOSÉ' : (Number(store.ajustementManuel) !== 0 ? 'AJUSTÉ' : 'AUTO');
       const isClientMode = store.devisModeClient;
 
-      // Left Column (Internal details OR Summary)
       pdf.setFont("helvetica", "normal");
       if (calcMode === 'IMPOSÉ' || isClientMode) {
-        // CLEAN MODE: Only show the main prestation
         pdf.setFont("helvetica", "bold");
         pdf.text("Description de la prestation :", 20, fY);
         pdf.setFont("helvetica", "normal");
         const lines = pdf.splitTextToSize(store.descriptifTravaux || prestationStr, 70);
         pdf.text(lines, 20, fY + 6);
       } else {
-        // DETAIL MODE: Show breakdown
-        pdf.text(`Fournitures : ${store.coutMaterielHT?.toFixed(2) || '0.00'} €`, 20, fY);
+        pdf.text(`Fournitures matériel : ${store.coutMaterielHT?.toFixed(2) || '0.00'} €`, 20, fY);
         pdf.text(`Main d'œuvre (${store.heuresMO || 0}h) : ${totalMoHT.toFixed(2)} €`, 20, fY + 6);
-        pdf.text(`Déplacement : ${store.coutDeplacementHT?.toFixed(2) || '0.00'} €`, 20, fY + 12);
+        pdf.text(`Déplacement et logistique : ${store.coutDeplacementHT?.toFixed(2) || '0.00'} €`, 20, fY + 12);
+        
         let nextY = fY + 18;
         if (store.nacelleActive) {
-          pdf.text(`Option Nacelle : ${store.coutNacelleHT?.toFixed(2) || '0.00'} €`, 20, nextY);
+          pdf.text(`Option Nacelle / Élévation : ${store.coutNacelleHT?.toFixed(2) || '0.00'} €`, 20, nextY);
           nextY += 6;
         }
         if (store.autresFraisHT) {
@@ -427,11 +446,10 @@ export function ExportFinal() {
         }
         if (calcMode === 'AJUSTÉ') {
           pdf.setFont("helvetica", "bolditalic");
-          pdf.text(`Ajustement Chantier : ${(store.ajustementManuel || 0).toFixed(2)} €`, 20, nextY);
+          pdf.text(`Ajustement commercial Chantier : ${(store.ajustementManuel || 0).toFixed(2)} €`, 20, nextY);
         }
       }
       
-      // Right Column (Totals - ULTRA VISIBLE)
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
@@ -443,31 +461,27 @@ export function ExportFinal() {
       pdf.text(`TVA (${store.tvaPourcentage || 0}%) :`, 105, fY + 14);
       pdf.text(`${tva.toFixed(2)} €`, 185, fY + 14, { align: 'right' });
 
-      // TTC Bar
       pdf.setFillColor(30, 58, 138);
       pdf.roundedRect(100, fY + 20, 90, 16, 2, 2, 'F');
       pdf.setTextColor(255, 255, 255);
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(16); // Bigger for TTC
+      pdf.setFontSize(16);
       pdf.text(`TOTAL TTC :`, 105, fY + 31);
       pdf.text(`${totalTTC.toFixed(2)} €`, 185, fY + 31, { align: 'right' });
 
       y += 80;
 
-      // Acompte
       if (store.acompteDemande) {
         pdf.setTextColor(30, 58, 138);
         pdf.setFontSize(12);
         pdf.setFont("helvetica", "bold");
-        pdf.text(`Acompte demandé : ${acompteCalcule.toFixed(2)} € (${store.acomptePourcentage || 0}%)`, 185, y, { align: 'right' });
+        pdf.text(`Acompte demandé : ${acompteCalcule.toFixed(2)} € (soit ${store.acomptePourcentage || 0}%)`, 185, y, { align: 'right' });
         y += 10;
       }
 
-      // Vérification espace conditions
       if (y > 230) { pdf.addPage(); y = drawHeader(pdf, `DEVIS SNIMOP - CONDITIONS`); }
       else { y += 2; }
 
-      // Conditions Block
       pdf.setFillColor(245, 247, 250);
       pdf.setDrawColor(200, 200, 200);
       pdf.roundedRect(14, y, 182, 25, 2, 2, 'FD');
@@ -475,23 +489,23 @@ export function ExportFinal() {
       pdf.setTextColor(30, 58, 138);
       pdf.setFont("helvetica", "bold");
       pdf.text("CONDITIONS", 20, y + 8);
-      
+
       pdf.setFontSize(9);
       pdf.setTextColor(80, 80, 80);
-      pdf.text(`Règlement : `, 20, y + 16);
+      pdf.text(`Conditions de règlement : `, 20, y + 16);
       pdf.setFont("helvetica", "normal");
-      pdf.text(`${store.conditionsReglement || 'À réception de facture'}`, 45, y + 16);
+      pdf.text(`${store.conditionsReglement || 'À réception de facture'}`, 60, y + 16);
       
       pdf.setFont("helvetica", "bold");
-      pdf.text(`Délai de réalisation : `, 20, y + 22);
+      pdf.text(`Délai de réalisation estimé : `, 20, y + 22);
       pdf.setFont("helvetica", "normal");
-      pdf.text(`${store.delai || 'À convenir'}`, 55, y + 22);
+      pdf.text(`${store.delai || 'À convenir'}`, 65, y + 22);
 
       y += 35;
 
-      // BON POUR ACCORD
       if (store.bonPourAccord) {
          if (y > 240) { pdf.addPage(); y = drawHeader(pdf, `DEVIS SNIMOP - SIGNATURE`); }
+         
          pdf.setFontSize(14);
          pdf.setFont("helvetica", "bold");
          pdf.setTextColor(0, 0, 0);
@@ -499,54 +513,65 @@ export function ExportFinal() {
          y += 8;
          pdf.setFontSize(10);
          pdf.setFont("helvetica", "normal");
-         pdf.text("Nom : ..............................................", 14, y);
-         pdf.text("Date : ..............................................", 14, y + 8);
-         pdf.text("Signature du client :", 100, y);
-         // Draw signature box
+         pdf.text("Fait à : ..............................................", 14, y);
+         pdf.text("Le : ..................................................", 14, y + 8);
+         pdf.text("Nom du signataire : ...................................", 14, y + 16);
+         
+         pdf.text("Signature du client (précédée de la mention 'Bon pour accord') :", 100, y);
          pdf.setDrawColor(0, 0, 0);
          pdf.setLineDashPattern([1, 1], 0);
          pdf.rect(100, y + 5, 80, 25, 'S');
          pdf.setLineDashPattern([], 0);
+         
          y += 35;
       }
 
       y += 5;
       addStepSignature('devis', "VALIDATION DEVIS");
 
-      // PAGE 5
+      // PAGE 5 : BON D'INTERVENTION
       pdf.addPage();
       y = drawHeader(pdf, "BON D'INTERVENTION SNIMOP");
+      
       y = addSection("Date d'intervention prévue", store.dateIntervention);
       y = addSection("Nature des travaux à réaliser", store.natureTravaux);
-      y = addSection("Matériel nécessaire", store.materielPrevu); 
-      y = addSection("Consignes et Remarques", store.consignes);
+      y = addSection("Matériel et logistique nécessaires", store.materielPrevu); 
+      y = addSection("Consignes et Remarques de préparation", store.consignes);
+      
       addStepSignature('intervention', "BON D'INTERVENTION");
 
-      // PAGE 6
+      // PAGE 6 : RAPPORT D'INTERVENTION
       pdf.addPage();
       y = drawHeader(pdf, "RAPPORT D'INTERVENTION SNIMOP");
+      
       y = addSection("Nature réelle de l'intervention", store.natureReelle);
-      y = addSection("Travaux réalisés", store.travauxRealises);
-      y = addSection("Matériel utilisé", store.materielUtilise);
-      yTopLine = y;
-      yL = addSectionAt("Temps passé", store.tempsPasse ? `${store.tempsPasse} heures` : "", 14, yTopLine, true);
-      yR = addSectionAt("Anomalies constatées", store.anomalies, 110, yTopLine, true);
-      y = Math.max(yL, yR);
-      y = addSection("Réserves", store.rapportReserves);
-      y = addSection("Observations finales", store.observationsFinales);
+      y = addSection("Travaux effectivement réalisés", store.travauxRealises);
+      y = addSection("Matériel utilisé sur site", store.materielUtilise);
+      
+      let yRTop = y;
+      let yRL = addSectionAt("Temps passé sur site", store.tempsPasse ? `${store.tempsPasse} heures` : "", 14, yRTop, true);
+      let yRR = addSectionAt("Anomalies constatées", store.anomalies, 110, yRTop, true);
+      y = Math.max(yRL, yRR);
+      
+      y = addSection("Réserves techniques éventuelles", store.rapportReserves);
+      y = addSection("Observations finales et commentaires", store.observationsFinales);
+      
       addStepSignature('rapport', "RAPPORT D'INTERVENTION");
 
-      // PAGE 7
+      // PAGE FINALE : SIGNATURES ET PHOTOS
       pdf.addPage();
-      y = drawHeader(pdf, "VALIDATION FINALE");
+      y = drawHeader(pdf, "VALIDATION FINALE ET SIGNATURE CLIENT");
+      
       y += 10;
       pdf.setDrawColor(30, 58, 138);
       pdf.setLineWidth(1);
       pdf.roundedRect(14, y, 182, 60, 3, 3, 'S'); 
+
       pdf.setFontSize(13);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(30, 58, 138);
-      pdf.text("SIGNATURE CLIENT", 20, y + 12);
+      pdf.text("SIGNATURE DU CLIENT", 20, y + 12);
+      
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(60, 60, 60);
       pdf.setFontSize(11);
@@ -558,7 +583,7 @@ export function ExportFinal() {
       } else {
         pdf.setTextColor(150, 150, 150);
         pdf.setFont("helvetica", "italic");
-        pdf.text("Signature non renseignée / Document non signé sur place", 20, y + 42);
+        pdf.text("Signature non renseignée / Document non signé numériquement sur place", 20, y + 42);
       }
 
       if (store.bonPourAccord) {
@@ -568,9 +593,7 @@ export function ExportFinal() {
         pdf.text("BON POUR ACCORD", 120, y + 42);
       }
 
-      // ==========================================
-      // PAGE PHOTOS (ANNEXE) - DYNAMIQUE AVEC GESTION DE BLOCS
-      // ==========================================
+      // ANNEXE PHOTOS
       if (validPhotos.length > 0) {
         let isFirstPhotoPage = true;
         let currentY = 0;
@@ -590,9 +613,8 @@ export function ExportFinal() {
           const dateStr = p.timestamp ? `Date : ${new Date(p.timestamp).toLocaleString('fr-FR')}` : '';
           const titleStr = p.title || '';
 
-          // 1. Calculs de l'image
-          const maxImageH = 100; // Hauteur max stricte pour permettre 2 photos si peu de texte
-          let imgW = 150; // Largeur de base
+          const maxImageH = 100;
+          let imgW = 150;
           let imgH = imgW / p.ratio;
           
           if (imgH > maxImageH) {
@@ -600,53 +622,42 @@ export function ExportFinal() {
             imgW = imgH * p.ratio;
           }
 
-          // 2. Calculs du texte descriptif
           pdf.setFontSize(10);
           pdf.setFont("helvetica", "normal");
           
+          // Calculer la hauteur du texte pour le saut de page
           const maxTextW = 160; 
           let titleLines: string[] = [];
           if (titleStr) {
-            titleLines = pdf.splitTextToSize(titleStr, maxTextW - 10); // padding interne x2
+            titleLines = pdf.splitTextToSize(titleStr, maxTextW - 10);
           }
           
-          // Hauteur de la ligne de base (Type + Date) = 10
-          // Si titre : 10 + 2 (gap) + (lines * 5) + 3 (padding bas)
           const textContainerHeight = titleLines.length > 0 ? 15 + (titleLines.length * 5) : 10;
-          
           const blockGap = 15;
           const blockTotalHeight = imgH + 4 + textContainerHeight + blockGap;
 
-          // 3. Vérification de l'espace disponible (Page A4 = 297mm, on laisse 15mm de marge basse = 282 max)
           if (currentY + blockTotalHeight > 282) {
             currentY = startNewPhotoPage(false);
           }
 
-          const drawXImage = 14 + (182 - imgW) / 2; // Centré
-          const drawXText = 14 + (182 - maxTextW) / 2; // Centré
+          const drawXImage = 14 + (182 - imgW) / 2;
+          const drawXText = 14 + (182 - maxTextW) / 2;
 
-          // ==========================================
-          // RENDU VISUEL DU BLOC (Indivisible)
-          // ==========================================
-          
-          // A. L'image
           try {
             pdf.addImage(p.img, 'JPEG', drawXImage, currentY, imgW, imgH);
             pdf.setDrawColor(200, 200, 200);
             pdf.setLineWidth(0.3);
             pdf.rect(drawXImage, currentY, imgW, imgH);
-          } catch(e) { console.error("Could not add image", e); }
+          } catch(e) {}
 
-          // B. Le cadre de texte (Premium container)
           const textY = currentY + imgH + 4;
           pdf.setFillColor(250, 251, 255);
           pdf.setDrawColor(220, 225, 235);
           pdf.setLineWidth(0.3);
           pdf.roundedRect(drawXText, textY, maxTextW, textContainerHeight, 2, 2, 'FD');
 
-          // C. Métadonnées (Type & Date)
           pdf.setFontSize(10);
-          pdf.setTextColor(30, 58, 138); // Bleu SNIMOP
+          pdf.setTextColor(30, 58, 138);
           pdf.setFont("helvetica", "bold");
           pdf.text(typeStr, drawXText + 5, textY + 6);
           
@@ -656,25 +667,114 @@ export function ExportFinal() {
             pdf.text(dateStr, drawXText + maxTextW - 5, textY + 6, { align: 'right' });
           }
 
-          // D. Description
           if (titleLines.length > 0) {
             pdf.setFont("helvetica", "normal");
             pdf.setTextColor(60, 60, 60);
             pdf.text(titleLines, drawXText + 5, textY + 13);
           }
 
-          // E. Avancer Y pour le bloc suivant
           currentY += imgH + 4 + textContainerHeight + blockGap;
         }
       }
 
       return pdf.output('blob');
-
     } catch (error) {
       console.error("CRITICAL PDF GENERATION ERROR:", error);
       throw error;
     }
   };
+
+  const generateSpecificPdfBlob = async (type: string) => {
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const logoData = await loadLogoBase64();
+      const mascotteData = await loadMascotteBase64();
+
+      const drawHeader = (p: jsPDF, title: string) => {
+        if (logoData) p.addImage(logoData.img, 'PNG', 14, 10, 40, 40 / logoData.ratio);
+        p.setFontSize(10); p.setTextColor(100, 100, 100);
+        p.text(`Dossier N° ${store.numeroAffaire || '-'}`, 196, 15, { align: 'right' });
+        p.setFontSize(16); p.setFont("helvetica", "bold"); p.setTextColor(30, 58, 138);
+        p.text(title.toUpperCase(), 14, 45);
+        p.line(14, 48, 196, 48);
+        return 58;
+      };
+
+      const addSection = (title: string, content: any) => {
+        const y = (pdf as any).getY ? (pdf as any).getY() : 60;
+        pdf.setFontSize(11); pdf.setFont("helvetica", "bold"); pdf.setTextColor(30, 58, 138);
+        pdf.text(title.toUpperCase(), 14, y);
+        pdf.setFont("helvetica", "normal"); pdf.setTextColor(60, 60, 60);
+        const lines = pdf.splitTextToSize(String(content || 'Non renseigné'), 182);
+        pdf.text(lines, 14, y + 7);
+        const finalY = y + 7 + (lines.length * 6) + 10;
+        if ((pdf as any).setY) (pdf as any).setY(finalY);
+        return finalY;
+      };
+
+      const addStepSignature = (step: string, title: string) => {
+        const sig = store.stepSignatures?.[step];
+        if (!sig) return;
+        const y = (pdf as any).getY ? (pdf as any).getY() : 240;
+        pdf.setFontSize(9); pdf.setTextColor(150, 150, 150);
+        pdf.text(`Validé par ${sig.technicienNom || 'Tech'} le ${new Date(sig.dateSignature).toLocaleDateString()}`, 14, y);
+        if (sig.technicienSignature) pdf.addImage(sig.technicienSignature, 'PNG', 14, y + 2, 30, 10);
+      };
+
+      if (mascotteData) {
+        pdf.saveGraphicsState();
+        // @ts-ignore
+        pdf.setGState(new (pdf as any).GState({ opacity: 0.05 }));
+        pdf.addImage(mascotteData.img, 'PNG', 40, 80, 130, 130 / mascotteData.ratio);
+        pdf.restoreGraphicsState();
+      }
+
+      const addSectionAt = (title: string, content: any, x: number, y: number, half: boolean) => {
+        pdf.setFontSize(11); pdf.setFont("helvetica", "bold"); pdf.setTextColor(30, 58, 138);
+        pdf.text(title.toUpperCase(), x, y);
+        pdf.setFont("helvetica", "normal"); pdf.setTextColor(60, 60, 60);
+        const lines = pdf.splitTextToSize(String(content || 'Non renseigné'), half ? 85 : 182);
+        pdf.text(lines, x, y + 7);
+        return y + 7 + (lines.length * 6) + 10;
+      };
+
+      if (type === 'devis') {
+        drawDevisSection(pdf, store, drawHeader, addSection, addStepSignature);
+      } else if (type === 'rapport') {
+        drawRapportSection(pdf, store, drawHeader, addSection, addSectionAt, addStepSignature);
+      } else if (type === 'infos') {
+        drawInformationsSection(pdf, store, drawHeader, addSection, addSectionAt, addStepSignature);
+      } else if (type === 'visite') {
+        drawVisiteSection(pdf, store, drawHeader, addSection, addSectionAt, addStepSignature);
+      } else if (type === 'intervention') {
+        drawInterventionSection(pdf, store, drawHeader, addSection, addStepSignature);
+      }
+
+      return pdf.output('blob');
+    } catch (e) {
+      console.error("Error specific PDF", e);
+      throw e;
+    }
+  };
+
+  useEffect(() => {
+    (window as any).triggerSpecificPDF = async (type: string) => {
+      try {
+        setIsGenerating(true);
+        const blob = await generateSpecificPdfBlob(type);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `SNIMOP_${type.toUpperCase()}_${store.numeroAffaire || 'REF'}.pdf`;
+        link.click();
+      } catch (e) {
+        alert("Erreur export.");
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+    return () => { delete (window as any).triggerSpecificPDF; };
+  }, [store]);
 
   const handleDownload = async () => {
     try {

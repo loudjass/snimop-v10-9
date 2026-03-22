@@ -4,7 +4,7 @@ import { useDossierStore } from '@/store/useDossierStore';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Download } from 'lucide-react';
 import { PhotoManager } from '@/components/ui/PhotoManager';
 import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
 
@@ -44,9 +44,20 @@ export function RapportIntervention() {
 
   return (
     <div className="flex flex-col gap-6 py-2">
-      <h2 className="text-3xl md:text-4xl font-black border-b border-white/10 pb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
-        Rapport d'intervention
-      </h2>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+        <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
+          Rapport d'intervention
+        </h2>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="bg-blue-500/10 border-blue-400/30 text-blue-300 hover:bg-blue-500/20"
+          onClick={() => (window as any).triggerSpecificPDF?.('rapport')}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Export PDF Rapport
+        </Button>
+      </div>
       <p className="text-sm font-medium text-emerald-200 bg-emerald-900/30 backdrop-blur-md p-4 rounded-2xl border border-emerald-500/20 shadow-inner">
         Rapport final à faire signer au client en fin de mission.
       </p>
