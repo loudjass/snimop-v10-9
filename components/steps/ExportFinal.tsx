@@ -191,19 +191,6 @@ export function ExportFinal() {
           lastLogoEndX = 14 + targetWidth;
         }
 
-        // MASCOTTE HEADER (À côté du logo)
-        if (mascotteData && mascotteData.img) {
-          try {
-             // Hauteur alignée visuellement avec le logo (18mm par défaut)
-             const mHeight = 18;
-             const mWidth = mHeight * mascotteData.ratio;
-             pageContextPdf.saveGraphicsState();
-             pageContextPdf.setGState(new (pageContextPdf as any).GState({ opacity: 0.85 }));
-             pageContextPdf.addImage(mascotteData.img, 'PNG', lastLogoEndX + 8, 12, mWidth, mHeight);
-             pageContextPdf.restoreGraphicsState();
-          } catch(e) {}
-        }
-
         // N° & Date TOP RIGHT
         pageContextPdf.setTextColor(100, 100, 100);
         pageContextPdf.setFontSize(10);
@@ -311,24 +298,37 @@ export function ExportFinal() {
           const photo = filtered[i];
           const photoData = await loadPhotoBase64(photo.imageBase64);
           if (photoData) {
-            const x = 14 + (i % 2) * (photoWidth + gap);
-            const currentY = y;
+            const containerX = 14 + (i % 2) * (photoWidth + gap);
+            const containerY = y;
 
-            // Cadre pro
+            // --- CALCUL RATIO POUR ÉVITER DÉFORMATION ---
+            let drawWidth = photoWidth;
+            let drawHeight = photoWidth / photoData.ratio;
+
+            if (drawHeight > photoHeight) {
+              drawHeight = photoHeight;
+              drawWidth = photoHeight * photoData.ratio;
+            }
+
+            // Centrage dans le cadre de 85x60
+            const offsetX = (photoWidth - drawWidth) / 2;
+            const offsetY = (photoHeight - drawHeight) / 2;
+
+            // Cadre pro (Fixe 85x60)
             pdf.setDrawColor(220, 220, 220);
             pdf.setLineWidth(0.5);
-            pdf.rect(x - 2, currentY - 2, photoWidth + 4, photoHeight + 12, 'S');
+            pdf.rect(containerX - 2, containerY - 2, photoWidth + 4, photoHeight + 12, 'S');
 
-            // Image
-            pdf.addImage(photoData.img, 'JPEG', x, currentY, photoWidth, photoHeight);
+            // Image centrée et sans déformation
+            pdf.addImage(photoData.img, 'JPEG', containerX + offsetX, containerY + offsetY, drawWidth, drawHeight);
             
-            // Légende
+            // Légende (toujours alignée sur le bas du cadre)
             pdf.setFontSize(9);
             pdf.setFont("helvetica", "italic");
             pdf.setTextColor(80, 80, 80);
             const title = photo.title || "Illustration sans titre";
             const lines = pdf.splitTextToSize(title, photoWidth);
-            pdf.text(lines, x, currentY + photoHeight + 6);
+            pdf.text(lines, containerX, containerY + photoHeight + 6);
           }
         }
         
