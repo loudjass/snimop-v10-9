@@ -178,17 +178,17 @@ export function ExportFinal() {
         pageContextPdf.rect(0, 0, 210, 40, 'F');
 
         // Logo TOP LEFT (Respect Ratio)
-        let lastLogoEndX = 14;
+        let lastLogoEndX = 15;
         if (logoData && logoData.img) {
-          let targetWidth = 53; // Légèrement agrandi
+          let targetWidth = 53; // Légère réduction pour l'équilibre
           let targetHeight = targetWidth / logoData.ratio;
-          // Sécurité anti-chevauchement si le logo s'avère haut
+          // Sécurité anti-chevauchement
           if (targetHeight > 25) {
             targetHeight = 25;
             targetWidth = targetHeight * logoData.ratio;
           }
-          pageContextPdf.addImage(logoData.img, 'PNG', 14, 10, targetWidth, targetHeight);
-          lastLogoEndX = 14 + targetWidth;
+          pageContextPdf.addImage(logoData.img, 'PNG', 15, 10, targetWidth, targetHeight);
+          lastLogoEndX = 15 + targetWidth;
         }
 
         // N° & Date TOP RIGHT
@@ -204,12 +204,12 @@ export function ExportFinal() {
         pageContextPdf.setTextColor(30, 58, 138);
         pageContextPdf.setFontSize(16);
         pageContextPdf.setFont("helvetica", "bold");
-        pageContextPdf.text(pageTitle.toUpperCase(), 14, 44);
+        pageContextPdf.text(pageTitle.toUpperCase(), 15, 44);
         
         // Fine separator
         pageContextPdf.setDrawColor(200, 200, 200);
         pageContextPdf.setLineWidth(0.3);
-        pageContextPdf.line(14, 48, 196, 48);
+        pageContextPdf.line(15, 48, 195, 48);
 
         // --- FILIGRANE MASCOTTE SUR TOUTES LES PAGES ---
         if (mascotteData && mascotteData.img) {
@@ -232,10 +232,10 @@ export function ExportFinal() {
       let y = 58;
 
       // Un peu aéré verticalement (+8px au lieu de 5) pour les textes
-      const addSection = (title: string, content?: string | number, halfWidth: boolean = false, xPos: number = 14) => {
+      const addSection = (title: string, content?: string | number, halfWidth: boolean = false, xPos: number = 15) => {
         let text = String(content || '').trim();
         if (!text) text = "Non renseigné";
-        if (y > 270) {
+        if (y > 260) {
           pdf.addPage();
           y = drawHeader(pdf, "Suite...");
         }
@@ -243,14 +243,14 @@ export function ExportFinal() {
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(30, 58, 138);
         pdf.text(title.toUpperCase(), xPos, y);
-        y += 7; // Plus aéré
+        y += 7; 
         pdf.setFontSize(11);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(50, 50, 50);
-        const ObjectifWidth = halfWidth ? 85 : 182;
+        const ObjectifWidth = halfWidth ? 85 : 180;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
         pdf.text(lines, xPos, y);
-        return y + (lines.length * 6) + 16; // Plus de respiration entre les blocs
+        return y + (lines.length * 6) + 16; 
       };
 
       const addSectionAt = (title: string, content: string | number | undefined, xPos: number, startY: number, halfWidth: boolean = false) => {
@@ -261,78 +261,102 @@ export function ExportFinal() {
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(30, 58, 138); 
         pdf.text(title.toUpperCase(), xPos, localY);
-        localY += 7; // Plus aéré
+        localY += 7;
         pdf.setFontSize(11);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(50, 50, 50);
-        const ObjectifWidth = halfWidth ? 85 : 182;
+        const ObjectifWidth = halfWidth ? 85 : 180;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
         pdf.text(lines, xPos, localY);
-        return localY + (lines.length * 6) + 16; // breathing room
+        return localY + (lines.length * 6) + 16;
       };
 
-      // HELPER POUR LES PHOTOS PAR SECTION
+      // HELPER POUR LES PHOTOS PAR SECTION (PREMIUM)
       const drawSectionPhotos = async (types: string[]) => {
         const filtered = store.photos.filter(p => types.includes(p.type)).slice(0, 2);
         if (filtered.length === 0) return;
 
         // Vérifier l'espace restant
-        if (y > 200) {
+        if (y > 180) {
           pdf.addPage();
-          y = drawHeader(pdf, "PHOTOS ILLUSTRATIVES");
+          y = drawHeader(pdf, "DOCUMENTS & PHOTOS");
         } else {
           y += 5;
         }
 
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(100, 100, 100);
-        pdf.text("PHOTOS RELATIVE À CETTE SECTION :", 14, y);
+        pdf.setTextColor(120, 120, 120);
+        pdf.text("PHOTOS ET ILLUSTRATIONS :", 15, y);
         y += 8;
 
         const photoWidth = 85;
-        const photoHeight = 60;
+        const photoHeight = 65; // Un peu plus grand
+        const descHeight = 22;  // Bloc descriptif haut de gamme
         const gap = 10;
 
         for (let i = 0; i < filtered.length; i++) {
           const photo = filtered[i];
           const photoData = await loadPhotoBase64(photo.imageBase64);
           if (photoData) {
-            const containerX = 14 + (i % 2) * (photoWidth + gap);
+            const containerX = 15 + (i % 2) * (photoWidth + gap);
             const containerY = y;
 
-            // --- CALCUL RATIO POUR ÉVITER DÉFORMATION ---
+            // --- CALCUL RATIO ---
             let drawWidth = photoWidth;
             let drawHeight = photoWidth / photoData.ratio;
-
             if (drawHeight > photoHeight) {
               drawHeight = photoHeight;
               drawWidth = photoHeight * photoData.ratio;
             }
-
-            // Centrage dans le cadre de 85x60
             const offsetX = (photoWidth - drawWidth) / 2;
             const offsetY = (photoHeight - drawHeight) / 2;
 
-            // Cadre pro (Fixe 85x60)
-            pdf.setDrawColor(220, 220, 220);
-            pdf.setLineWidth(0.5);
-            pdf.rect(containerX - 2, containerY - 2, photoWidth + 4, photoHeight + 12, 'S');
-
-            // Image centrée et sans déformation
+            // 1. OMBRE / FOND DU BLOC
+            pdf.setFillColor(245, 247, 250);
+            pdf.roundedRect(containerX - 1, containerY - 1, photoWidth + 2, photoHeight + descHeight + 2, 2, 2, 'F');
+            
+            // 2. CADRE PHOTO AVEC BORDURE ACCENT PÉNOMBRE
+            pdf.setFillColor(15, 23, 42); // Fond sombre derrière l'image si ratio différent
+            pdf.rect(containerX, containerY, photoWidth, photoHeight, 'F');
             pdf.addImage(photoData.img, 'JPEG', containerX + offsetX, containerY + offsetY, drawWidth, drawHeight);
             
-            // Légende (toujours alignée sur le bas du cadre)
+            // Bordure pro
+            pdf.setDrawColor(30, 58, 138);
+            pdf.setLineWidth(0.8);
+            pdf.line(containerX, containerY, containerX + photoWidth, containerY); // Ligne d'accent haut
+
+            // 3. BLOC DESCRIPTIF STRUCTURE
+            const descY = containerY + photoHeight + 4;
+            
+            // Type Badge
+            pdf.setFontSize(7);
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFillColor(30, 58, 138);
+            pdf.roundedRect(containerX + 2, descY, 20, 4, 1, 1, 'F');
+            pdf.text(photo.type.toUpperCase(), containerX + 12, descY + 3, { align: 'center' });
+
+            // Timestamp
+            if (photo.timestamp) {
+              pdf.setTextColor(150, 150, 150);
+              pdf.setFontSize(7);
+              pdf.setFont("helvetica", "normal");
+              const dateTxt = format(new Date(photo.timestamp), 'dd/MM/yyyy HH:mm');
+              pdf.text(dateTxt, containerX + photoWidth - 2, descY + 3, { align: 'right' });
+            }
+
+            // Description / Titre
             pdf.setFontSize(9);
-            pdf.setFont("helvetica", "italic");
-            pdf.setTextColor(80, 80, 80);
-            const title = photo.title || "Illustration sans titre";
-            const lines = pdf.splitTextToSize(title, photoWidth);
-            pdf.text(lines, containerX, containerY + photoHeight + 6);
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(51, 65, 85);
+            const title = photo.title || "Observation technique";
+            const lines = pdf.splitTextToSize(title, photoWidth - 4);
+            pdf.text(lines, containerX + 2, descY + 10);
           }
         }
         
-        y += photoHeight + 25;
+        y += photoHeight + descHeight + 20;
       };
 
       // PAGE 2
@@ -379,23 +403,23 @@ export function ExportFinal() {
       pdf.setFillColor(248, 250, 252);
       pdf.setDrawColor(226, 232, 240);
       pdf.setLineWidth(0.5);
-      pdf.roundedRect(14, y, 182, 35, 3, 3, 'FD');
+      pdf.roundedRect(15, y, 180, 35, 3, 3, 'FD');
       y += 12;
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(30, 58, 138);
-      pdf.text("CONDITIONS FINANCIÈRES :", 20, y);
+      pdf.text("CONDITIONS FINANCIÈRES :", 21, y);
       y += 10;
       pdf.setFontSize(11);
       pdf.setTextColor(60, 60, 60);
-      pdf.text("Règlement :", 20, y);
+      pdf.text("Règlement :", 21, y);
       pdf.setFont("helvetica", "normal");
-      pdf.text(store.conditionsReglement || 'Non renseigné', 45, y);
+      pdf.text(store.conditionsReglement || 'Non renseigné', 46, y);
       y += 8;
       pdf.setFont("helvetica", "bold");
-      pdf.text("Délai :", 20, y);
+      pdf.text("Délai :", 21, y);
       pdf.setFont("helvetica", "normal");
-      pdf.text(store.delai || 'Non renseigné', 35, y);
+      pdf.text(store.delai || 'Non renseigné', 36, y);
 
       // PAGE 5
       pdf.addPage();
@@ -426,23 +450,23 @@ export function ExportFinal() {
       y += 10;
       pdf.setDrawColor(30, 58, 138);
       pdf.setLineWidth(1);
-      pdf.roundedRect(14, y, 182, 60, 3, 3, 'S'); 
+      pdf.roundedRect(15, y, 180, 60, 3, 3, 'S'); 
       pdf.setFontSize(13);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(30, 58, 138);
-      pdf.text("SIGNATURE CLIENT", 20, y + 12);
+      pdf.text("SIGNATURE CLIENT", 21, y + 12);
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(60, 60, 60);
       pdf.setFontSize(11);
       const signataire = store.nomSignataireClient || store.contact || store.client || '';
-      pdf.text(`Nom du signataire : ${signataire ? signataire : 'Non renseigné'}`, 20, y + 20);
+      pdf.text(`Nom du signataire : ${signataire ? signataire : 'Non renseigné'}`, 21, y + 20);
 
       if (store.signatureClient && store.signatureClient.startsWith('data:image')) {
-        pdf.addImage(store.signatureClient, 'PNG', 20, y + 25, 80, 25);
+        pdf.addImage(store.signatureClient, 'PNG', 21, y + 25, 80, 25);
       } else {
         pdf.setTextColor(150, 150, 150);
         pdf.setFont("helvetica", "italic");
-        pdf.text("Signature non renseignée / Document non signé sur place", 20, y + 42);
+        pdf.text("Signature non renseignée / Document non signé sur place", 21, y + 42);
       }
 
       if (store.bonPourAccord) {
