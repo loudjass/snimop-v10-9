@@ -1,14 +1,15 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDossierStore } from '@/store/useDossierStore';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, ArrowRight, Calculator, Euro, HardHat, Truck, Zap, Eye, Settings2, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calculator, Euro, HardHat, Truck, Zap, Eye, Settings2, Users, ChevronUp, X } from 'lucide-react';
 import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
 
 export function Devis() {
   const store = useDossierStore();
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   useEffect(() => {
     const state = useDossierStore.getState();
@@ -291,60 +292,126 @@ export function Devis() {
       </div>
 
       {/* ========================================================== */}
-      {/* BLOC FINAL ULTRA VISIBLE STICKY BOTTOM */}
+      {/* BLOC FINAL STICKY BOTTOM (Responsive) */}
       {/* ========================================================== */}
-      <div className="fixed bottom-0 left-0 w-full z-50 p-2 md:p-3 pointer-events-none flex justify-center pb-safe">
-        <div className="w-full max-w-4xl bg-slate-900 border-2 border-slate-700/80 rounded-2xl md:rounded-[2rem] p-3 md:p-5 shadow-[0_-10px_30px_rgba(0,0,0,0.9)] relative overflow-hidden pointer-events-auto backdrop-blur-3xl bg-opacity-95">
-          
-          {/* LIGNE TOP: ACOMPTE & TVA CONFIG */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/50 pb-2 mb-2 gap-3 md:gap-0">
-             
-             <div className="flex items-center gap-3 w-full md:w-auto">
-               <label className="flex items-center gap-2 cursor-pointer p-1">
-                 <input type="checkbox" checked={store.acompteDemande} onChange={(e) => store.setField('acompteDemande', e.target.checked)} className="w-5 h-5 rounded text-blue-500 bg-slate-800 border-slate-600 focus:ring-blue-500" />
-                 <span className="font-bold text-xs md:text-sm text-slate-300 uppercase tracking-wider">Acompte demandé</span>
-               </label>
-               
-               {store.acompteDemande && (
-                 <div className="flex items-center gap-2 bg-indigo-900/40 px-3 py-1.5 rounded-lg border border-indigo-500/30 shadow-inner">
+      <div className="fixed bottom-0 left-0 w-full z-50 pointer-events-none flex justify-center pb-safe px-2 md:px-0">
+        
+        {/* MOBILE: PANNEAU SLIDE-UP DÉTAILS */}
+        <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 md:hidden ${isPanelOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsPanelOpen(false)}>
+          <div 
+            className={`absolute bottom-0 left-0 w-full bg-slate-900 border-t-2 border-blue-500/50 rounded-t-[2.5rem] p-6 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out flex flex-col gap-6 ${isPanelOpen ? 'translate-y-0' : 'translate-y-full'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+              <h4 className="text-xl font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                <Settings2 className="w-5 h-5" /> Détails Chiffrage
+              </h4>
+              <button onClick={() => setIsPanelOpen(false)} className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* ACOMPTE & TVA (Directement modifiables) */}
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <input type="checkbox" checked={store.acompteDemande} onChange={(e) => store.setField('acompteDemande', e.target.checked)} className="w-6 h-6 rounded text-blue-500" />
+                  <span className="font-bold text-slate-200">Demander un acompte</span>
+                </label>
+                {store.acompteDemande && (
+                  <div className="flex items-center gap-3 bg-indigo-900/30 p-3 rounded-xl border border-indigo-500/30">
+                    <span className="text-sm font-bold text-indigo-200 uppercase flex-1">Acompte ({store.acomptePourcentage}%):</span>
+                    <span className="text-lg font-black font-mono text-white">{acompteCalcule.toFixed(2)} €</span>
+                    <div className="w-16">
+                      <Input type="number" step="1" value={store.acomptePourcentage || ''} onChange={(e: any) => store.setField('acomptePourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold h-9 bg-slate-800 border-indigo-500/50" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700">
+                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">TVA Appliquée (%) :</span>
+                <div className="w-20">
+                  <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold bg-slate-800 border-slate-600 h-9" />
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+                <span className="text-sm text-slate-400 font-bold uppercase tracking-widest">Prix Final HT</span>
+                <span className="text-xl font-black text-white font-mono">{prixRetenuHT.toFixed(2)} €</span>
+              </div>
+              
+              <div className="flex justify-between items-center p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+                <span className="text-sm text-slate-400 font-bold uppercase tracking-widest">Montant TVA</span>
+                <span className="text-xl font-black text-slate-300 font-mono">+{tva.toFixed(2)} €</span>
+              </div>
+            </div>
+
+            <Button onClick={() => setIsPanelOpen(false)} className="w-full py-6 rounded-2xl font-black text-xl shadow-xl mt-2">
+              RETOUR AU CHIFFRAGE
+            </Button>
+          </div>
+        </div>
+
+        {/* PIED DE PAGE : VERSION DESKTOP */}
+        <div className="hidden md:flex w-full max-w-4xl bg-slate-900 border-2 border-slate-700/80 rounded-[2rem] p-5 shadow-[0_-10px_30px_rgba(0,0,0,0.9)] relative overflow-hidden pointer-events-auto backdrop-blur-3xl bg-opacity-95">
+          <div className="w-full flex flex-col gap-4">
+            <div className="flex justify-between items-center border-b border-slate-700/50 pb-2 mb-2">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer p-1">
+                  <input type="checkbox" checked={store.acompteDemande} onChange={(e) => store.setField('acompteDemande', e.target.checked)} className="w-5 h-5 rounded text-blue-500 bg-slate-800 border-slate-600 focus:ring-blue-500" />
+                  <span className="font-bold text-sm text-slate-300 uppercase tracking-wider">Acompte demandé</span>
+                </label>
+                {store.acompteDemande && (
+                  <div className="flex items-center gap-2 bg-indigo-900/40 px-3 py-1.5 rounded-lg border border-indigo-500/30 shadow-inner">
                     <span className="text-sm font-bold text-indigo-200 uppercase tracking-widest">Acompte à verser :</span>
-                    <span className="text-lg md:text-xl font-black text-white font-mono">{acompteCalcule.toFixed(2)} €</span>
-                    <div className="w-14 ml-2 hidden sm:block">
+                    <span className="text-xl font-black text-white font-mono">{acompteCalcule.toFixed(2)} €</span>
+                    <div className="w-14 ml-2">
                       <Input type="number" step="1" value={store.acomptePourcentage || ''} onChange={(e: any) => store.setField('acomptePourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold text-xs h-7 px-1 bg-slate-800" />
                     </div>
-                    <span className="text-xs text-indigo-300 hidden sm:block">%</span>
-                 </div>
-               )}
-             </div>
-
-             <div className="flex items-center space-x-2">
+                    <span className="text-xs text-indigo-300">%</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
                 <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">TVA Appliquée :</span>
                 <div className="w-16">
-                   <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold bg-slate-800/80 border-slate-600 focus:border-blue-500 px-1 hover:border-blue-500 py-1 h-7 text-xs" />
+                  <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold bg-slate-800/80 border-slate-600 focus:border-blue-500 px-1 hover:border-blue-500 py-1 h-7 text-xs" />
                 </div>
                 <span className="text-xs font-bold text-slate-500">%</span>
-             </div>
-          </div>
-
-          {/* LIGNE INFO FINANCIERE */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-row md:flex-col justify-between md:justify-center items-center md:items-start w-full md:w-1/3 border-b md:border-b-0 md:border-r border-slate-700/50 pb-3 md:pb-0 md:pr-6 gap-2 md:gap-1">
-              <span className="text-xs md:text-sm text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">PRIX FINAL HT</span>
-              <span className="text-xl md:text-2xl font-black text-white font-mono">{prixRetenuHT.toFixed(2)} €</span>
+              </div>
             </div>
-
-            <div className="flex flex-row md:flex-col justify-between md:justify-center items-center md:items-start w-full md:w-1/3 border-b md:border-b-0 md:border-r border-slate-700/50 pb-3 md:pb-0 md:pr-6 md:pl-6 gap-2 md:gap-1">
-              <span className="text-xs md:text-sm text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">TVA CALCULEE</span>
-              <span className="text-lg md:text-xl font-black text-slate-300 font-mono">+{tva.toFixed(2)} €</span>
-            </div>
-            
-            <div className="flex flex-col flex-1 w-full justify-center items-center py-2 md:py-3 px-4 rounded-xl border border-blue-400/50 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-               <span className="text-xs md:text-sm font-black text-blue-300 uppercase tracking-widest mb-0.5">TOTAL TTC</span>
-               <span className="text-5xl md:text-6xl font-black text-white font-mono drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] leading-none">{totalTTC.toFixed(2)} €</span>
+            <div className="flex gap-4 items-center justify-between">
+              <div className="flex flex-col justify-center items-start w-1/3 border-r border-slate-700/50 pr-6 gap-1">
+                <span className="text-sm text-slate-400 font-bold uppercase tracking-widest">PRIX FINAL HT</span>
+                <span className="text-2xl font-black text-white font-mono">{prixRetenuHT.toFixed(2)} €</span>
+              </div>
+              <div className="flex flex-col justify-center items-start w-1/3 border-r border-slate-700/50 pr-6 pl-6 gap-1">
+                <span className="text-sm text-slate-400 font-bold uppercase tracking-widest">TVA CALCULEE</span>
+                <span className="text-xl font-black text-slate-300 font-mono">+{tva.toFixed(2)} €</span>
+              </div>
+              <div className="flex flex-col flex-1 justify-center items-center py-3 px-4 rounded-xl border border-blue-400/50 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                <span className="text-sm font-black text-blue-300 uppercase tracking-widest mb-0.5">TOTAL TTC</span>
+                <span className="text-6xl font-black text-white font-mono drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] leading-none">{totalTTC.toFixed(2)} €</span>
+              </div>
             </div>
           </div>
-          
         </div>
+
+        {/* PIED DE PAGE : VERSION MOBILE COMPACTE (Max 60px) */}
+        <div 
+          onClick={() => setIsPanelOpen(true)}
+          className="md:hidden w-full h-[60px] max-w-sm bg-slate-900 border-2 border-blue-500/40 rounded-full flex items-center justify-between px-6 shadow-[0_0_30px_rgba(59,130,246,0.3)] pointer-events-auto active:scale-95 transition-transform cursor-pointer backdrop-blur-3xl bg-opacity-95"
+        >
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] leading-tight">TOTAL TTC</span>
+            <span className="text-xl font-black text-white font-mono leading-none tracking-tight">{totalTTC.toFixed(2)} €</span>
+          </div>
+          <div className="bg-blue-500/20 p-1.5 rounded-full border border-blue-500/30">
+            <ChevronUp className="w-5 h-5 text-blue-400 animate-bounce group-hover:animate-none" />
+          </div>
+        </div>
+
       </div>
       
     </div>
