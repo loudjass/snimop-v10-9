@@ -387,7 +387,7 @@ export function ExportFinal() {
       pdf.setFillColor(250, 252, 255);
       pdf.setDrawColor(30, 58, 138); 
       pdf.setLineWidth(0.4);
-      pdf.roundedRect(14, y, 182, 65, 3, 3, 'FD'); 
+      pdf.roundedRect(14, y, 182, 60, 3, 3, 'FD'); 
 
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
@@ -400,7 +400,7 @@ export function ExportFinal() {
 
       // Left Column (Base calculation)
       pdf.setFont("helvetica", "normal");
-      pdf.text(`Coût matériel estimé : ${store.coutMaterielHT?.toFixed(2) || '0.00'} €`, 20, fY);
+      pdf.text(`Fournitures : ${store.coutMaterielHT?.toFixed(2) || '0.00'} €`, 20, fY);
       pdf.text(`Main d'œuvre (${store.heuresMO || 0}h) : ${totalMoHT.toFixed(2)} €`, 20, fY + 6);
       pdf.text(`Déplacement : ${store.coutDeplacementHT?.toFixed(2) || '0.00'} €`, 20, fY + 12);
       if (store.nacelleActive) {
@@ -411,53 +411,87 @@ export function ExportFinal() {
         pdf.text(`Autres frais : ${store.autresFraisHT.toFixed(2)} €`, 20, yAutre);
       }
       
-      // Right Column (Totals)
+      // Right Column (Totals - ULTRA VISIBLE)
       pdf.setFont("helvetica", "bold");
-      pdf.text(`PRIX TOTAL HT :`, 110, fY + 6);
-      pdf.text(`${prixRetenuHT.toFixed(2)} €`, 180, fY + 6, { align: 'right' });
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`TOTAL HT :`, 105, fY + 6);
+      pdf.text(`${prixRetenuHT.toFixed(2)} €`, 185, fY + 6, { align: 'right' });
 
       pdf.setFont("helvetica", "normal");
-      pdf.text(`TVA (${store.tvaPourcentage || 0}%) :`, 110, fY + 12);
-      pdf.text(`${tva.toFixed(2)} €`, 180, fY + 12, { align: 'right' });
+      pdf.setFontSize(11);
+      pdf.text(`TVA (${store.tvaPourcentage || 0}%) :`, 105, fY + 14);
+      pdf.text(`${tva.toFixed(2)} €`, 185, fY + 14, { align: 'right' });
 
       // TTC Bar
       pdf.setFillColor(30, 58, 138);
-      pdf.rect(105, fY + 16, 85, 10, 'F');
+      pdf.roundedRect(100, fY + 20, 90, 16, 2, 2, 'F');
       pdf.setTextColor(255, 255, 255);
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(12);
-      pdf.text(`TOTAL TTC :`, 110, fY + 23);
-      pdf.text(`${totalTTC.toFixed(2)} €`, 180, fY + 23, { align: 'right' });
+      pdf.setFontSize(16); // Bigger for TTC
+      pdf.text(`TOTAL TTC :`, 105, fY + 31);
+      pdf.text(`${totalTTC.toFixed(2)} €`, 185, fY + 31, { align: 'right' });
+
+      y += 80;
 
       // Acompte
       if (store.acompteDemande) {
         pdf.setTextColor(30, 58, 138);
-        pdf.setFontSize(10);
-        pdf.text(`Acompte à la commande (${store.acomptePourcentage || 0}%) : ${acompteCalcule.toFixed(2)} € TTC`, 180, fY + 34, { align: 'right' });
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`Acompte demandé : ${acompteCalcule.toFixed(2)} € (${store.acomptePourcentage || 0}%)`, 185, y, { align: 'right' });
+        y += 10;
       }
 
-      y += 75;
-
       // Vérification espace conditions
-      if (y > 250) { pdf.addPage(); y = drawHeader(pdf, `DEVIS SNIMOP - CONDITIONS`); }
+      if (y > 230) { pdf.addPage(); y = drawHeader(pdf, `DEVIS SNIMOP - CONDITIONS`); }
       else { y += 2; }
 
-      // Conditions
-      pdf.setFontSize(10);
-      pdf.setTextColor(60, 60, 60);
+      // Conditions Block
+      pdf.setFillColor(245, 247, 250);
+      pdf.setDrawColor(200, 200, 200);
+      pdf.roundedRect(14, y, 182, 25, 2, 2, 'FD');
+      pdf.setFontSize(11);
+      pdf.setTextColor(30, 58, 138);
       pdf.setFont("helvetica", "bold");
-      pdf.text("Conditions de règlement :", 14, y);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(store.conditionsReglement || 'Non renseigné', 65, y);
+      pdf.text("CONDITIONS", 20, y + 8);
       
-      y += 6;
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Délai de réalisation :", 14, y);
+      pdf.setFontSize(9);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text(`Règlement : `, 20, y + 16);
       pdf.setFont("helvetica", "normal");
-      pdf.text(store.delai || 'Non renseigné', 55, y);
+      pdf.text(`${store.conditionsReglement || 'À réception de facture'}`, 45, y + 16);
+      
+      pdf.setFont("helvetica", "bold");
+      pdf.text(`Délai de réalisation : `, 20, y + 22);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`${store.delai || 'À convenir'}`, 55, y + 22);
 
-      y += 10;
-      addStepSignature('devis', "DEVIS");
+      y += 35;
+
+      // BON POUR ACCORD
+      if (store.bonPourAccord) {
+         if (y > 240) { pdf.addPage(); y = drawHeader(pdf, `DEVIS SNIMOP - SIGNATURE`); }
+         pdf.setFontSize(14);
+         pdf.setFont("helvetica", "bold");
+         pdf.setTextColor(0, 0, 0);
+         pdf.text("Bon pour accord", 14, y);
+         y += 8;
+         pdf.setFontSize(10);
+         pdf.setFont("helvetica", "normal");
+         pdf.text("Nom : ..............................................", 14, y);
+         pdf.text("Date : ..............................................", 14, y + 8);
+         pdf.text("Signature du client :", 100, y);
+         // Draw signature box
+         pdf.setDrawColor(0, 0, 0);
+         pdf.setLineDashPattern([1, 1], 0);
+         pdf.rect(100, y + 5, 80, 25, 'S');
+         pdf.setLineDashPattern([], 0);
+         y += 35;
+      }
+
+      y += 5;
+      addStepSignature('devis', "VALIDATION DEVIS");
 
       // PAGE 5
       pdf.addPage();

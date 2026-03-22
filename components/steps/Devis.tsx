@@ -4,7 +4,7 @@ import { useDossierStore } from '@/store/useDossierStore';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, ArrowRight, Calculator, Euro, Hammer, HardHat, Truck, Receipt, Zap, Eye, Settings2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calculator, Euro, HardHat, Truck, Zap, Eye, Settings2, Users } from 'lucide-react';
 import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
 
 export function Devis() {
@@ -23,6 +23,7 @@ export function Devis() {
   const handlePrev = () => store.setField('currentStep', 2);
 
   const toggleModeRapide = () => store.setField('devisModeRapide', !store.devisModeRapide);
+  const toggleModeClient = () => store.setField('devisModeClient', !store.devisModeClient);
 
   // --- CALCULS DU MOTEUR ---
   const totalMoHT = (store.tauxHoraireMO || 0) * (store.heuresMO || 0);
@@ -35,8 +36,20 @@ export function Devis() {
   const margeEuros = coutTotalHT * ((store.margePourcentage || 0) / 100);
   const prixConseilleHT = coutTotalHT + margeEuros;
 
-  const margeColor = store.margePourcentage >= 30 ? 'text-emerald-400' : store.margePourcentage >= 15 ? 'text-blue-400' : 'text-orange-400';
-  const margeBg = store.margePourcentage >= 30 ? 'bg-emerald-500/10 border-emerald-500/30' : store.margePourcentage >= 15 ? 'bg-blue-500/10 border-blue-500/30' : 'bg-orange-500/10 border-orange-500/30';
+  // Visual Marge logic
+  const mPct = store.margePourcentage || 0;
+  let margeColor = 'text-green-400';
+  let margeBg = 'bg-green-500/10 border-green-500/30';
+  let margeIcon = '🟢';
+  let margeText = 'Rentable';
+  
+  if (mPct < 10) {
+    margeColor = 'text-red-400'; margeBg = 'bg-red-500/10 border-red-500/30'; margeIcon = '🔴'; margeText = 'Marge faible';
+  } else if (mPct <= 25) {
+    margeColor = 'text-yellow-400'; margeBg = 'bg-yellow-500/10 border-yellow-500/30'; margeIcon = '🟡'; margeText = 'Standard';
+  } else if (mPct > 40) {
+    margeColor = 'text-emerald-400'; margeBg = 'bg-emerald-500/10 border-emerald-500/30'; margeIcon = '🟢🟢'; margeText = 'Très rentable';
+  }
 
   // Résolution du prix final
   const isEcrasementTotal = store.prixFinalManuel !== null && store.prixFinalManuel !== undefined && String(store.prixFinalManuel) !== '';
@@ -50,179 +63,209 @@ export function Devis() {
   const acompteCalcule = store.acompteDemande ? totalTTC * ((store.acomptePourcentage || 0) / 100) : 0;
 
   return (
-    <div className="flex flex-col gap-8 py-4">
+    <div className="flex flex-col gap-6 py-4 pb-60 relative">
       
-      {/* HEADER & TOGGLE */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-white/10 pb-4">
+      {/* HEADER & TOGGLES */}
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 border-b border-white/10 pb-4">
         <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg flex items-center gap-3">
           <Calculator className="w-8 h-8 md:w-10 md:h-10 text-blue-400" />
           Chiffrage
         </h2>
-        <Button 
-          variant={store.devisModeRapide ? "default" : "outline"} 
-          onClick={toggleModeRapide}
-          className={`gap-2 font-bold px-6 py-5 rounded-xl shadow-lg transition-all ${store.devisModeRapide ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white border-none scale-105' : 'hover:bg-slate-800 text-slate-300'}`}
-        >
-          <Zap className={`w-5 h-5 ${store.devisModeRapide ? 'animate-pulse text-yellow-200' : 'text-slate-400'}`} />
-          {store.devisModeRapide ? "MODE RAPIDE CHANTIER" : "Activer le Mode Rapide"}
-        </Button>
-      </div>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <Button 
+            variant={store.devisModeRapide ? "default" : "outline"} 
+            onClick={toggleModeRapide}
+            className={`gap-2 font-bold px-4 py-4 rounded-xl shadow-lg transition-all ${store.devisModeRapide ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-none' : 'hover:bg-slate-800 text-slate-300 border-slate-600'}`}
+          >
+            <Zap className={`w-4 h-4 ${store.devisModeRapide ? 'animate-pulse text-yellow-200' : 'text-slate-400'}`} />
+            {store.devisModeRapide ? "MODE RAPIDE" : "Activer Mode Rapide"}
+          </Button>
 
-      {/* RÉSUMÉ RAPIDE TERRAIN */}
-      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-6 shadow-xl flex flex-col gap-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-        <h3 className="text-lg font-black text-slate-200 flex items-center gap-2 border-b border-slate-700 pb-3 uppercase tracking-wider">
-          <Eye className="w-5 h-5 text-blue-400" /> Résumé du chiffrage
-        </h3>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 mt-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Type</span>
-            <span className="font-black text-blue-300 capitalize text-lg leading-tight truncate">{store.prestationType?.replace('_', ' + ') || 'Non défini'}</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Temps estimé</span>
-            <span className="font-black text-slate-200 text-lg leading-tight">{store.heuresMO || 0} h</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Matériel</span>
-            <span className="font-black text-slate-200 text-lg leading-tight">{(store.coutMaterielHT || 0).toFixed(2)} €</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total TTC Calculé</span>
-            <span className="font-black text-slate-200 text-lg leading-tight">{totalTTC.toFixed(2)} €</span>
-          </div>
-          <div className="flex flex-col gap-1 p-2 -my-2 bg-blue-500/10 rounded-xl border border-blue-500/20 justify-center">
-            <span className="text-xs font-black text-blue-300 uppercase tracking-wider text-center">Prix Retenu HT</span>
-            <span className="font-black text-white text-2xl text-center drop-shadow-md">{prixRetenuHT.toFixed(2)} €</span>
-          </div>
+          <Button 
+            variant={store.devisModeClient ? "default" : "outline"} 
+            onClick={toggleModeClient}
+            className={`gap-2 font-bold px-4 py-4 rounded-xl shadow-lg transition-all ${store.devisModeClient ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-none' : 'hover:bg-slate-800 text-slate-300 border-slate-600'}`}
+          >
+            <Users className={`w-4 h-4 ${store.devisModeClient ? 'text-white' : 'text-slate-400'}`} />
+            {store.devisModeClient ? "VUE CLIENT ACTIVE" : "Afficher Version Client"}
+          </Button>
         </div>
       </div>
+
+      {/* RÉSUMÉ RAPIDE TERRAIN (Seulement si Mode Client est inactif) */}
+      {!store.devisModeClient && (
+        <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-5 shadow-sm flex flex-col gap-3">
+          <h3 className="text-base font-black text-slate-300 flex items-center gap-2 border-b border-slate-700/50 pb-2 uppercase tracking-wider">
+            <Eye className="w-4 h-4 text-blue-400" /> Résumé Rapide
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-1">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prestation</span>
+              <span className="font-black text-blue-300 capitalize text-sm md:text-base leading-tight truncate">{store.prestationType?.replace('_', ' + ') || 'Non défini'}</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Heures MO</span>
+              <span className="font-black text-slate-200 text-sm md:text-base leading-tight">{store.heuresMO || 0} h</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Matériel HT</span>
+              <span className="font-black text-slate-200 text-sm md:text-base leading-tight">{(store.coutMaterielHT || 0).toFixed(2)} €</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bénéfice</span>
+              <span className={`font-black text-sm md:text-base leading-tight ${margeColor}`}>{margeEuros.toFixed(2)} €</span>
+            </div>
+            <div className="flex flex-col gap-0.5 col-span-2 md:col-span-4 lg:col-span-1 bg-blue-500/10 rounded-lg border border-blue-500/20 px-3 py-1 items-center justify-center">
+              <span className="text-[10px] font-black text-blue-300 uppercase tracking-widest">Prix Vente TTC</span>
+              <span className="font-black text-white text-lg md:text-xl drop-shadow-md leading-none">{totalTTC.toFixed(2)} €</span>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* PARAMÈTRES PRESTATION */}
       {!store.devisModeRapide && (
-        <div className="bg-[#0f172a]/70 backdrop-blur-2xl p-6 md:p-8 rounded-3xl shadow-xl border border-slate-700/50 flex flex-col gap-6">
-          <h3 className="text-xl font-bold text-indigo-300 border-b border-slate-700 pb-2 flex items-center gap-2">
+        <div className="bg-[#0f172a]/70 p-5 md:p-6 rounded-2xl shadow-sm border border-slate-700/50 flex flex-col gap-5">
+          <h3 className="text-lg font-bold text-indigo-300 border-b border-slate-700/50 pb-2 flex items-center gap-2">
             <Settings2 className="w-5 h-5" /> 1. Détails du Projet
           </h3>
           
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3">
             {['fourniture_pose', 'fourniture', 'pose'].map((type) => (
-              <label key={type} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${store.prestationType === type ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-inner' : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>
+              <label key={type} className={`flex-1 flex items-center justify-center gap-2 p-2 md:p-3 rounded-xl border-2 cursor-pointer transition-all ${store.prestationType === type ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-inner' : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>
                 <input type="radio" name="prestation" value={type} checked={store.prestationType === type} onChange={(e) => store.setField('prestationType', e.target.value)} className="hidden" />
-                <span className="font-black uppercase tracking-wide text-sm">{type.replace('_', ' + ')}</span>
+                <span className="font-black uppercase tracking-wide text-xs md:text-sm text-center">{type.replace('_', ' + ')}</span>
               </label>
             ))}
           </div>
 
           <Textarea label="Descriptif des travaux" value={store.descriptifTravaux} onChange={(e: any) => store.setField('descriptifTravaux', e.target.value)} />
-          <Textarea label="Détail du matériel prévu" value={store.devisMateriel} onChange={(e: any) => store.setField('devisMateriel', e.target.value)} />
+          {!store.devisModeClient && (
+            <Textarea label="Détail interne du matériel prévu" value={store.devisMateriel} onChange={(e: any) => store.setField('devisMateriel', e.target.value)} />
+          )}
         </div>
       )}
 
-      {/* MOTEUR DE CHIFFRAGE */}
-      <div className="bg-slate-900/80 backdrop-blur-2xl p-6 md:p-8 rounded-3xl shadow-[0_10px_40px_rgb(0,0,0,0.5)] border border-blue-500/30 flex flex-col gap-8 relative overflow-hidden">
-        
-        <h3 className="text-2xl font-black text-blue-400 border-b border-slate-700 pb-2 flex items-center gap-3">
-          <Euro className="w-6 h-6" /> 2. Calcul des Coûts HT
-        </h3>
+      {/* MOTEUR DE CHIFFRAGE (Masqué en Vue Client) */}
+      {!store.devisModeClient && (
+        <div className="bg-slate-900/80 p-5 md:p-6 rounded-2xl shadow-sm border border-slate-700/70 flex flex-col gap-6">
+          <h3 className="text-xl font-black text-blue-400 border-b border-slate-700/50 pb-2 flex items-center gap-2">
+            <Euro className="w-5 h-5" /> 2. Calcul des Coûts Internes HT
+          </h3>
 
-        {/* Ligne 1: Matériel & MO */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="flex flex-col gap-4 p-5 bg-slate-800/40 rounded-2xl border border-slate-700/50 hover:border-slate-500 transition-colors shadow-inner">
-            <h4 className="font-black text-slate-200 text-sm tracking-widest uppercase flex items-center gap-2">
-              <Hammer className="w-5 h-5 text-blue-400 drop-shadow-md" /> Coût Matériel
-            </h4>
-            <Input type="number" step="0.01" label="Montant global HT (€)" value={store.coutMaterielHT || ''} onChange={(e: any) => store.setField('coutMaterielHT', parseFloat(e.target.value) || 0)} />
-          </div>
-
-          <div className="flex flex-col gap-4 p-5 bg-slate-800/40 rounded-2xl border border-slate-700/50 hover:border-slate-500 transition-colors shadow-inner">
-            <h4 className="font-black text-slate-200 text-sm tracking-widest uppercase flex items-center justify-between">
-              <div className="flex items-center gap-2"><HardHat className="w-5 h-5 text-blue-400 drop-shadow-md" /> Main d'œuvre</div>
-              <span className="text-blue-300 bg-blue-500/10 px-3 py-1 rounded-lg border border-blue-500/20 shadow-inner">{totalMoHT.toFixed(2)} € HT</span>
-            </h4>
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <Input type="number" step="1" label="Taux horaire (€)" value={store.tauxHoraireMO || ''} onChange={(e: any) => store.setField('tauxHoraireMO', parseFloat(e.target.value) || 0)} />
-              <Input type="number" step="0.5" label="Heures" value={store.heuresMO || ''} onChange={(e: any) => store.setField('heuresMO', parseFloat(e.target.value) || 0)} />
+          {/* Ligne 1: Matériel & MO */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-3 p-4 bg-slate-800/40 rounded-xl border border-slate-700/50 hover:border-slate-500 transition-colors">
+              <h4 className="font-black text-slate-300 text-xs tracking-widest uppercase flex items-center gap-2">
+                <span>🛠</span> Fournitures
+              </h4>
+              <Input type="number" step="0.01" label="Coût d'achat global HT (€)" value={store.coutMaterielHT || ''} onChange={(e: any) => store.setField('coutMaterielHT', parseFloat(e.target.value) || 0)} />
             </div>
-          </div>
-        </div>
 
-        {/* Ligne 2: Déplacement, Nacelle, Autres (Caché en Mode Rapide) */}
-        {!store.devisModeRapide && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-700/50">
-            <div className="flex gap-2 items-center">
-              <Truck className="w-8 h-8 text-slate-500 mb-2" />
-              <div className="flex-1 w-full">
-                <Input type="number" step="1" label="Déplacement HT (€)" value={store.coutDeplacementHT || ''} onChange={(e: any) => store.setField('coutDeplacementHT', parseFloat(e.target.value) || 0)} />
+            <div className="flex flex-col gap-3 p-4 bg-slate-800/40 rounded-xl border border-slate-700/50 hover:border-slate-500 transition-colors">
+              <h4 className="font-black text-slate-300 text-xs tracking-widest uppercase flex items-center justify-between">
+                <div className="flex items-center gap-2"><span>👷</span> Main d'œuvre</div>
+                <span className="text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{totalMoHT.toFixed(2)} € HT</span>
+              </h4>
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <Input type="number" step="1" label="TauxHoraire(€)" value={store.tauxHoraireMO || ''} onChange={(e: any) => store.setField('tauxHoraireMO', parseFloat(e.target.value) || 0)} />
+                <Input type="number" step="0.5" label="Heures" value={store.heuresMO || ''} onChange={(e: any) => store.setField('heuresMO', parseFloat(e.target.value) || 0)} />
               </div>
             </div>
+          </div>
+
+          {/* Ligne 2: Déplacement, Nacelle, Autres (Caché en Mode Rapide) */}
+          {!store.devisModeRapide && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 border-t border-slate-700/50">
+              <div className="flex gap-2 items-center">
+                <Truck className="w-6 h-6 text-slate-500 mb-1" />
+                <div className="flex-1 w-full">
+                  <Input type="number" step="1" label="Déplacement HT (€)" value={store.coutDeplacementHT || ''} onChange={(e: any) => store.setField('coutDeplacementHT', parseFloat(e.target.value) || 0)} />
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-2 p-2 bg-slate-800/30 rounded-xl border border-slate-700/50">
+                <label className="flex items-center gap-2 text-xs font-bold tracking-wide text-slate-300 mb-1 cursor-pointer">
+                  <input type="checkbox" checked={store.nacelleActive} onChange={(e) => store.setField('nacelleActive', e.target.checked)} className="w-4 h-4 rounded bg-slate-800 border-slate-500 text-blue-500" />
+                  Option Nacelle
+                </label>
+                <Input type="number" step="1" label="Coût Nacelle HT(€)" value={store.coutNacelleHT || ''} onChange={(e: any) => store.setField('coutNacelleHT', parseFloat(e.target.value) || 0)} disabled={!store.nacelleActive} />
+              </div>
+
+              <div className="flex flex-col justify-end">
+                <Input type="number" step="1" label="Autres frais HT (€)" value={store.autresFraisHT || ''} onChange={(e: any) => store.setField('autresFraisHT', parseFloat(e.target.value) || 0)} />
+              </div>
+            </div>
+          )}
+
+          {/* SOUS-TOTAL COÛT DE REVIENT */}
+          <div className="flex items-center justify-between p-4 bg-slate-950/60 rounded-xl border border-slate-700 shadow-inner mt-2">
+            <span className="font-bold tracking-wider text-slate-400 uppercase text-xs md:text-sm">Coût total interne HT :</span>
+            <span className="text-xl md:text-2xl font-mono font-black text-slate-200">{coutTotalHT.toFixed(2)} €</span>
+          </div>
+
+          {/* CONSTRUCTION DU PRIX DE VENTE */}
+          <h3 className="text-xl font-black text-blue-400 border-b border-slate-700/50 pb-2 mt-4 flex items-center gap-2">
+            <span>💰</span> 3. Marge & Ajustements
+          </h3>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
             
-            <div className="flex flex-col gap-2 p-3 bg-slate-800/30 rounded-xl border border-slate-700/50">
-              <label className="flex items-center gap-2 text-sm font-bold tracking-wide text-slate-300 mb-1 cursor-pointer">
-                <input type="checkbox" checked={store.nacelleActive} onChange={(e) => store.setField('nacelleActive', e.target.checked)} className="w-5 h-5 rounded bg-slate-800 border-slate-500 text-blue-500" />
-                Inclure Option Nacelle
-              </label>
-              <Input type="number" step="1" label="Coût Nacelle HT (€)" value={store.coutNacelleHT || ''} onChange={(e: any) => store.setField('coutNacelleHT', parseFloat(e.target.value) || 0)} disabled={!store.nacelleActive} />
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-blue-500/20 shadow-sm relative">
+              <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs text-center border-b border-white/5 pb-2">Calcul Auto</h4>
+              <div className="w-full">
+                <Input type="number" step="1" label="Marge cible (%)" value={store.margePourcentage || ''} onChange={(e: any) => store.setField('margePourcentage', parseFloat(e.target.value) || 0)} />
+              </div>
+              <div className="flex justify-between items-center text-slate-400 mt-auto pt-3 border-t border-slate-700/50">
+                 <span className="text-xs font-bold uppercase">Prix HT Calculé :</span>
+                 <span className="font-mono text-lg text-slate-200 font-bold">{prixConseilleHT.toFixed(2)} €</span>
+              </div>
             </div>
 
-            <div className="flex flex-col justify-end">
-              <Input type="number" step="1" label="Autres frais HT (€)" value={store.autresFraisHT || ''} onChange={(e: any) => store.setField('autresFraisHT', parseFloat(e.target.value) || 0)} />
+            <div className="flex flex-col p-1 space-y-4 justify-center items-center">
+              {/* MARGE INDICATOR */}
+              <div className={`px-4 py-5 rounded-xl border flex flex-col justify-center items-center w-full shadow-inner ${margeBg} transition-colors duration-300 h-full`}>
+                 <span className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
+                   {margeIcon} Bénéfice
+                 </span>
+                 <span className={`text-4xl font-black font-mono drop-shadow-md lg:whitespace-nowrap ${margeColor}`}>+{margeEuros.toFixed(2)} €</span>
+                 <div className="flex flex-wrap justify-center items-center gap-2 mt-3 block w-full text-center">
+                   <span className={`text-sm font-black bg-black/30 px-3 py-1 rounded-full border border-white/10 ${margeColor}`}>
+                     {store.margePourcentage || 0}%
+                   </span>
+                   <span className={`text-xs font-bold ${margeColor} bg-black/20 px-2 py-1 rounded capitalize border border-black/30`}>
+                     {margeText}
+                   </span>
+                 </div>
+              </div>
             </div>
+
+            <div className="flex flex-col gap-4 p-5 bg-[#0f172a]/90 rounded-xl border border-slate-700 shadow-sm relative">
+              <div className="absolute top-0 right-0 p-2">
+                 <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded ${isEcrasementTotal ? 'bg-amber-500/20 text-amber-400 font-mono ring-2 ring-amber-500/50' : 'bg-blue-500/20 text-blue-400'}`}>
+                   {isEcrasementTotal ? 'MANUEL' : 'AUTO'}
+                 </span>
+              </div>
+              <h4 className="font-black text-slate-300 uppercase tracking-widest text-xs text-center border-b border-white/5 pb-2 w-full pr-8">Correction</h4>
+              <div className="flex-1 space-y-4">
+                <Input type="number" step="1" label="Ajuster (+/- €)" value={store.ajustementManuel || ''} onChange={(e: any) => store.setField('ajustementManuel', parseFloat(e.target.value) || 0)} disabled={isEcrasementTotal} placeholder="ex: 50" className="border-blue-500/30" />
+                <Input type="number" step="1" label="Prix final imposé (€) (remplace le calcul systématiquement)" value={store.prixFinalManuel !== null ? store.prixFinalManuel : ''} onChange={(e: any) => {
+                  const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                  store.setField('prixFinalManuel', val);
+                }} placeholder="Prix Forfaitaire" className={`placeholder-opacity-50 ${isEcrasementTotal ? 'border-amber-500/50 bg-amber-500/10 text-amber-100' : 'border-slate-600 bg-slate-800'}`} />
+              </div>
+            </div>
+
           </div>
-        )}
-
-        {/* SOUS-TOTAL COÛT DE REVIENT */}
-        <div className="flex items-center justify-between p-5 bg-slate-950/60 rounded-2xl border-2 border-slate-700 shadow-inner mt-4">
-          <span className="text-xl font-bold tracking-wider text-slate-400">Coût total HT calculé :</span>
-          <span className="text-3xl font-mono font-black text-slate-200">{coutTotalHT.toFixed(2)} €</span>
         </div>
-
-        {/* CONSTRUCTION DU PRIX DE VENTE */}
-        <h3 className="text-2xl font-black text-blue-400 border-b border-slate-700 pb-2 mt-8 flex items-center gap-3">
-          <Euro className="w-6 h-6" /> 3. Marge Business
-        </h3>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          
-          <div className="flex flex-col gap-5 p-6 bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl border border-blue-500/20 shadow-lg relative">
-            <h4 className="font-black text-slate-200 uppercase tracking-widest text-sm text-center">Mode A : Auto</h4>
-            <div className="w-full">
-              <Input type="number" step="1" label="Marge cible (%)" value={store.margePourcentage || ''} onChange={(e: any) => store.setField('margePourcentage', parseFloat(e.target.value) || 0)} />
-            </div>
-            <div className="flex justify-between items-center text-slate-400 mt-auto pt-4 border-t border-slate-700/50">
-               <span className="text-sm font-bold uppercase">Prix Conseillé :</span>
-               <span className="font-mono text-xl text-slate-200 font-bold">{prixConseilleHT.toFixed(2)} €</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col p-2 space-y-4 justify-center items-center">
-            {/* MARGE INDICATOR */}
-            <div className={`p-6 rounded-2xl border-2 flex flex-col justify-center items-center w-full min-h-[160px] shadow-inner ${margeBg} transition-colors duration-300`}>
-               <span className="text-sm font-black uppercase tracking-widest text-slate-400 mb-2">MARGE CIBLE :</span>
-               <span className={`text-5xl font-black font-mono drop-shadow-lg ${margeColor}`}>+{margeEuros.toFixed(2)} €</span>
-               <span className={`text-xl font-black mt-3 bg-black/30 px-5 py-2 rounded-full border border-white/10 ${margeColor}`}>({store.margePourcentage || 0} %)</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-5 p-6 bg-[#0f172a]/90 rounded-2xl border border-slate-700 shadow-lg">
-            <h4 className="font-black text-slate-200 uppercase tracking-widest text-sm text-center">Modes B & C : Manuels</h4>
-            <div className="flex-1 space-y-5 mt-2">
-              <Input type="number" step="1" label="Ajuster le prix (+/- €)" value={store.ajustementManuel || ''} onChange={(e: any) => store.setField('ajustementManuel', parseFloat(e.target.value) || 0)} disabled={isEcrasementTotal} placeholder="ex: 50" className="border-blue-500/30" />
-              <Input type="number" step="1" label="Forcer le Prix HT (€)" value={store.prixFinalManuel !== null ? store.prixFinalManuel : ''} onChange={(e: any) => {
-                const val = e.target.value === '' ? null : parseFloat(e.target.value);
-                store.setField('prixFinalManuel', val);
-              }} placeholder="Écrasement total" className="border-amber-500/50 bg-amber-500/5 text-amber-100 placeholder-amber-500/30" />
-            </div>
-          </div>
-
-        </div>
-      </div>
+      )}
 
       {/* OPTIONS ADDITIONNELLES */}
       {!store.devisModeRapide && (
-        <div className="bg-[#0f172a]/70 backdrop-blur-2xl p-6 md:p-8 rounded-3xl shadow-xl border border-slate-700/50 flex flex-col gap-6">
-          <h3 className="text-xl font-bold text-indigo-300 border-b border-slate-700 pb-2 flex items-center gap-2">
-            4. Extras du document
+        <div className="bg-[#0f172a]/70 p-5 md:p-6 rounded-2xl shadow-sm border border-slate-700/50 flex flex-col gap-5">
+          <h3 className="text-lg font-bold text-indigo-300 border-b border-slate-700/50 pb-2 flex items-center gap-2">
+            4. Conditions du Devis
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -230,68 +273,79 @@ export function Devis() {
             <Input label="Délai de réalisation" value={store.delai} onChange={(e: any) => store.setField('delai', e.target.value)} placeholder="Ex: 2 semaines après accord" />
           </div>
           <Textarea label="Réserves / Exclusions" value={store.reserves} onChange={(e: any) => store.setField('reserves', e.target.value)} />
-          <label className="flex items-center gap-3 mt-2 p-4 border border-white/10 rounded-2xl bg-slate-800/40 cursor-pointer hover:bg-slate-700/50 transition-all shadow-inner">
+          <label className="flex items-center gap-3 mt-2 p-3 border border-white/10 rounded-xl bg-slate-800/40 cursor-pointer hover:bg-slate-700/50 transition-all shadow-inner">
             <input type="checkbox" checked={store.bonPourAccord} onChange={(e) => store.setField('bonPourAccord', e.target.checked)} className="w-5 h-5 text-blue-500 rounded border-slate-600 focus:ring-blue-500" />
-            <span className="font-bold text-slate-200">Inclure la mention "Bon pour accord"</span>
+            <span className="font-bold text-slate-300">Inclure la mention "Bon pour accord" au bas du devis</span>
           </label>
         </div>
       )}
 
-      {/* BLOC FINAL ULTRA VISIBLE */}
-      <div className="mt-8 bg-slate-900 border-2 border-slate-700 rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
-        
-        {/* LIGNE 1: PRIX FINAL HT */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center border-b border-slate-700/50 pb-5 gap-2">
-           <span className="text-xl md:text-2xl text-slate-300 font-bold uppercase tracking-widest flex items-center gap-3">
-             <Receipt className="w-6 h-6 text-slate-400" /> PRIX FINAL HT :
-           </span>
-           <span className="text-3xl md:text-4xl font-black text-white font-mono text-right">{prixRetenuHT.toFixed(2)} €</span>
-        </div>
-        
-        {/* LIGNE 2: TVA */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center border-b border-slate-700/50 py-5 gap-2">
-           <div className="flex items-center gap-4">
-             <span className="text-xl md:text-2xl text-slate-400 font-bold uppercase tracking-widest">TVA :</span>
-             <div className="w-24">
-               <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold bg-slate-800/80 border-slate-600 focus:border-blue-500 transition-colors" />
-             </div>
-             <span className="text-lg text-slate-500">%</span>
-           </div>
-           <span className="text-2xl md:text-3xl font-black text-slate-400 font-mono text-right">+{tva.toFixed(2)} €</span>
-        </div>
-        
-        {/* LIGNE 3: TOTAL TTC */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center py-6 mt-2 gap-2 bg-blue-500/10 p-6 rounded-2xl border border-blue-500/30">
-           <span className="text-3xl md:text-4xl font-black text-blue-400 uppercase tracking-widest drop-shadow-sm">TOTAL TTC :</span>
-           <span className="text-5xl md:text-6xl font-black text-white font-mono drop-shadow-[0_2px_10px_rgba(59,130,246,0.3)] text-right">{totalTTC.toFixed(2)} €</span>
-        </div>
-        
-        {/* LIGNE 4: ACOMPTE INTEGRÉE DANS LE BLOC FINAL */}
-        <div className="mt-6 pt-6 border-t border-slate-700/50 flex flex-col md:flex-row justify-between items-center gap-6">
-          <label className="flex items-center gap-3 cursor-pointer p-3 hover:bg-slate-800 rounded-xl transition-all w-full md:w-auto">
-            <input type="checkbox" checked={store.acompteDemande} onChange={(e) => store.setField('acompteDemande', e.target.checked)} className="w-6 h-6 rounded text-blue-500 bg-slate-800 border-slate-600 focus:ring-blue-500" />
-            <span className="font-bold text-lg text-slate-300 uppercase tracking-wide">Acompte demandé</span>
-          </label>
+      {store.bonPourAccord && (
+        <StepSignatureZone stepKey="devis" title="Devis" />
+      )}
+
+      {/* NAVIGATION BOTTOM */}
+      <div className="flex justify-between mt-4">
+        <Button variant="outline" onClick={handlePrev} className="px-5 py-5 rounded-xl hover:bg-slate-800"><ArrowLeft className="w-5 h-5 mr-2 hidden sm:inline" /> Retour</Button>
+        <Button onClick={handleNext} className="px-8 py-5 rounded-xl font-black shadow-lg">Continuer <ArrowRight className="w-5 h-5 ml-2 hidden sm:inline" /></Button>
+      </div>
+
+      {/* ========================================================== */}
+      {/* BLOC FINAL ULTRA VISIBLE STICKY BOTTOM */}
+      {/* ========================================================== */}
+      <div className="fixed bottom-0 left-0 w-full z-50 p-3 md:p-4 pointer-events-none flex justify-center pb-safe">
+        <div className="w-full max-w-5xl bg-slate-900 border-2 border-slate-700/80 rounded-2xl md:rounded-3xl p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] relative overflow-hidden pointer-events-auto backdrop-blur-3xl bg-opacity-95">
           
-          {store.acompteDemande && (
-            <div className="flex flex-col md:flex-row items-center gap-4 bg-slate-800/80 p-4 rounded-xl border border-slate-600 shadow-inner w-full md:w-auto">
-               <div className="w-24">
-                 <Input type="number" step="1" value={store.acomptePourcentage || ''} onChange={(e: any) => store.setField('acomptePourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold text-lg" />
-               </div>
-               <span className="text-xl text-slate-400">%</span>
-               <span className="hidden md:inline text-2xl text-slate-500 px-2">=</span>
-               <span className="text-3xl md:text-4xl font-black text-blue-300 font-mono text-right">{acompteCalcule.toFixed(2)} €</span>
+          {/* LIGNE TOP: ACOMPTE & TVA CONFIG */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/50 pb-3 mb-3 gap-3 md:gap-0">
+             
+             <div className="flex items-center gap-3 w-full md:w-auto">
+               <label className="flex items-center gap-2 cursor-pointer p-1">
+                 <input type="checkbox" checked={store.acompteDemande} onChange={(e) => store.setField('acompteDemande', e.target.checked)} className="w-5 h-5 rounded text-blue-500 bg-slate-800 border-slate-600 focus:ring-blue-500" />
+                 <span className="font-bold text-xs md:text-sm text-slate-300 uppercase tracking-wider">Acompte demandé</span>
+               </label>
+               
+               {store.acompteDemande && (
+                 <div className="flex items-center gap-1.5 bg-indigo-900/40 px-2 py-1 rounded-lg border border-indigo-500/30">
+                    <div className="w-14">
+                      <Input type="number" step="1" value={store.acomptePourcentage || ''} onChange={(e: any) => store.setField('acomptePourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold text-xs h-7 px-1" />
+                    </div>
+                    <span className="text-xs text-indigo-300">%</span>
+                    <span className="text-sm md:text-base font-black text-indigo-200 font-mono ml-1">{acompteCalcule.toFixed(2)} €</span>
+                 </div>
+               )}
+             </div>
+
+             <div className="flex items-center space-x-2">
+                <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">TVA Appliquée :</span>
+                <div className="w-16">
+                   <Input type="number" step="0.1" value={store.tvaPourcentage || ''} onChange={(e: any) => store.setField('tvaPourcentage', parseFloat(e.target.value) || 0)} className="text-center font-bold bg-slate-800/80 border-slate-600 focus:border-blue-500 px-1 hover:border-blue-500 py-1 h-7 text-xs" />
+                </div>
+                <span className="text-xs font-bold text-slate-500">%</span>
+             </div>
+          </div>
+
+          {/* LIGNE INFO FINANCIERE */}
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-row md:flex-col justify-between md:justify-center items-center md:items-start w-full md:w-1/3 border-b md:border-b-0 md:border-r border-slate-700/50 pb-3 md:pb-0 md:pr-6 gap-2 md:gap-1">
+              <span className="text-xs md:text-sm text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">PRIX FINAL HT</span>
+              <span className="text-xl md:text-2xl font-black text-white font-mono">{prixRetenuHT.toFixed(2)} €</span>
             </div>
-          )}
+
+            <div className="flex flex-row md:flex-col justify-between md:justify-center items-center md:items-start w-full md:w-1/3 border-b md:border-b-0 md:border-r border-slate-700/50 pb-3 md:pb-0 md:pr-6 md:pl-6 gap-2 md:gap-1">
+              <span className="text-xs md:text-sm text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">TVA CALCULEE</span>
+              <span className="text-lg md:text-xl font-black text-slate-300 font-mono">+{tva.toFixed(2)} €</span>
+            </div>
+            
+            <div className="flex flex-col flex-1 w-full justify-center items-center py-2 md:py-3 px-4 rounded-xl border border-blue-500/30 bg-blue-500/10 shadow-inner">
+               <span className="text-xs md:text-sm font-black text-blue-400 uppercase tracking-widest mb-0.5">TOTAL TTC</span>
+               <span className="text-4xl md:text-5xl font-black text-white font-mono drop-shadow-lg leading-none">{totalTTC.toFixed(2)} €</span>
+            </div>
+          </div>
+          
         </div>
       </div>
-
-      <StepSignatureZone stepKey="devis" title="Devis" />
-
-      <div className="flex justify-between mt-8 mb-4">
-        <Button variant="outline" onClick={handlePrev} className="px-8 py-6 text-xl rounded-2xl hover:bg-slate-800"><ArrowLeft className="w-6 h-6 mr-2" /> Retour</Button>
-        <Button onClick={handleNext} className="px-12 py-6 text-xl rounded-2xl font-black shadow-[0_0_20px_rgba(59,130,246,0.3)]">Continuer <ArrowRight className="w-7 h-7 ml-2" /></Button>
-      </div>
+      
     </div>
   );
 }

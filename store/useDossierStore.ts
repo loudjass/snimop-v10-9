@@ -72,7 +72,8 @@ export interface DossierData {
   ajustementManuel: number;
   acompteDemande: boolean;
   acomptePourcentage: number;
-  devisModeRapide: boolean; // Ajout du mode rapide
+  devisModeRapide: boolean; 
+  devisModeClient: boolean; // Ajout du mode client
   // ---------------------------------------
 
   dateIntervention: string;
@@ -161,6 +162,7 @@ const initialDossierData: Omit<DossierData, 'id' | 'updatedAt' | 'numeroAffaire'
   acompteDemande: false,
   acomptePourcentage: 30, // 30% default acompte
   devisModeRapide: false,
+  devisModeClient: false,
 
   dateIntervention: '',
   materielPrevu: '',
