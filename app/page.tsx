@@ -1,7 +1,6 @@
 "use client";
-// [2026-03-22] Vercel redeploy trigger for SNIMOP V10.9 branding ok
 
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDossierStore } from '@/store/useDossierStore';
 import { SnimopLogo } from '@/components/ui/SnimopLogo';
 import { Accueil } from '@/components/steps/Accueil';
@@ -11,7 +10,6 @@ import { Devis } from '@/components/steps/Devis';
 import { BonIntervention } from '@/components/steps/BonIntervention';
 import { RapportIntervention } from '@/components/steps/RapportIntervention';
 import { ExportFinal } from '@/components/steps/ExportFinal';
-import { PdfService } from '@/components/pdf/PdfService';
 import { ClipboardList, ClipboardSignature, Wrench, HardHat, FileText, CheckCircle2, Home as HomeIcon } from 'lucide-react';
 
 const steps = [
@@ -26,11 +24,13 @@ const steps = [
 export default function Home() {
   const currentStep = useDossierStore((state) => state.currentStep);
   const setField = useDossierStore((state) => state.setField);
-  
-  // Mission 5: Auto-scroll en haut au changement d'étape
+  const [isClient, setIsClient] = useState(false);
+
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentStep]);
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Chargement...</div>;
 
   const renderStep = () => {
     switch (currentStep) {
@@ -47,24 +47,21 @@ export default function Home() {
 
   return (
     <div className="min-h-screen text-slate-100 pb-20 relative font-sans">
-
+      
       {/* Background global industriel profond avec overlay */}
-      <div
+      <div 
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-slate-950"
         style={{ backgroundImage: "url('/snimop-bg.jpg')" }}
       />
       {/* Overlay plus prononcé pour contraster avec le verre dépoli blanc/gris des cartes */}
       <div className="fixed inset-0 z-0 bg-[#070b14]/80 backdrop-blur-sm" />
 
-      <PdfService />
-
       <div className="relative z-10 flex flex-col min-h-screen">
-        
-        {/* Header premium avec logo SNIMOP principal (SEUL ET UNIQUE ELEMENT STICKY) */}
-        <header className="bg-slate-900/95 backdrop-blur-md border-b border-white/10 p-4 sticky top-0 z-50 flex items-center h-[76px] px-6 shadow-md shadow-slate-900/20">
+        {/* Header premium avec logo SNIMOP principal */}
+        <header className="bg-slate-900/60 backdrop-blur-xl border-b border-white/5 p-4 sticky top-0 z-50 flex items-center min-h-[76px] px-6">
           <div className="flex-1 flex justify-start">
             {currentStep > 0 && (
-              <button
+              <button 
                 onClick={() => setField('currentStep', 0)}
                 className="flex items-center justify-center p-2.5 rounded-full bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-sm border border-white/5"
                 title="Retour à l'accueil"
@@ -75,27 +72,29 @@ export default function Home() {
           </div>
           <SnimopLogo useGradient className="w-[160px] md:w-[200px] h-[35px] md:h-[45px] mx-auto flex-shrink-0" />
           <div className="flex-1 flex justify-end">
-            <img
-              src="/snimop-mascote.png"
-              alt=""
-              className="h-10 w-auto object-contain opacity-90 transition-all hover:scale-105 hover:opacity-100"
+            <img 
+              src="/snimop-mascote.png" 
+              alt="" 
+              className="h-10 w-auto object-contain opacity-90 transition-all hover:scale-105 hover:opacity-100" 
             />
           </div>
         </header>
 
-        {/* Stepper Premium (FLUX NORMAL, DISPARAÎT NATURELLEMENT SOUS LE HEADER AU SCROLL) */}
+        {/* Stepper Premium */}
         {currentStep > 0 && currentStep <= 6 && (
-          <div className="bg-slate-900/60 backdrop-blur-xl border-b border-white/10 py-4 px-2 overflow-x-auto relative z-40 transition-all mb-4">
+          <div className="bg-slate-900/50 backdrop-blur-lg border-b border-white/5 py-4 px-2 mb-6 overflow-x-auto shadow-xl sticky top-[60px] z-40">
             <div className="flex items-center min-w-max px-2 justify-between max-w-3xl mx-auto">
               {steps.map((step, idx) => (
                 <div key={step.id} className="flex items-center flex-1">
                   <div
-                    className={`flex flex-col items-center justify-center cursor-pointer transition-all duration-300 w-full ${currentStep === step.id ? 'text-blue-400 scale-110' : currentStep > step.id ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-400'
-                      }`}
+                    className={`flex flex-col items-center justify-center cursor-pointer transition-all duration-300 w-full ${
+                      currentStep === step.id ? 'text-blue-400 scale-110' : currentStep > step.id ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-400'
+                    }`}
                     onClick={() => setField('currentStep', step.id)}
                   >
-                    <div className={`p-2.5 rounded-full mb-1 flex items-center justify-center shadow-inner transition-colors ${currentStep === step.id ? 'bg-blue-500/20 ring-1 ring-blue-400/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : currentStep > step.id ? 'bg-emerald-500/10' : 'bg-slate-800/40'
-                      }`}>
+                    <div className={`p-2.5 rounded-full mb-1 flex items-center justify-center shadow-inner transition-colors ${
+                      currentStep === step.id ? 'bg-blue-500/20 ring-1 ring-blue-400/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : currentStep > step.id ? 'bg-emerald-500/10' : 'bg-slate-800/40'
+                    }`}>
                       {step.icon}
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-widest">{step.title}</span>
@@ -110,7 +109,7 @@ export default function Home() {
         )}
 
         {/* Main Content */}
-        <main className="max-w-3xl mx-auto px-4 w-full flex-1 relative z-30 pt-4">
+        <main className="max-w-3xl mx-auto px-4 w-full flex-1">
           {renderStep()}
         </main>
       </div>
