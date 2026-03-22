@@ -192,27 +192,45 @@ export function ExportFinal() {
           lastLogoEndX = 14 + targetWidth;
         }
 
-        // MASCOTTE HEADER (À côté du logo)
+        // MASCOTTE HEADER SUPPRIMÉE - Remplacée par un Watermark global centré
         if (mascotteData && mascotteData.img) {
           try {
-             // Hauteur alignée visuellement avec le logo (18mm par défaut)
-             const mHeight = 18;
-             const mWidth = mHeight * mascotteData.ratio;
-             pageContextPdf.saveGraphicsState();
-             pageContextPdf.setGState(new (pageContextPdf as any).GState({ opacity: 0.85 }));
-             pageContextPdf.addImage(mascotteData.img, 'PNG', lastLogoEndX + 8, 12, mWidth, mHeight);
-             pageContextPdf.restoreGraphicsState();
+            const wWidth = 130;
+            const wHeight = wWidth / mascotteData.ratio;
+            const wX = (210 - wWidth) / 2;
+            const wY = (297 - wHeight) / 2; // Centre exact de la page
+            
+            pageContextPdf.saveGraphicsState();
+            pageContextPdf.setGState(new (pageContextPdf as any).GState({ opacity: 0.06 }));
+            pageContextPdf.addImage(mascotteData.img, 'PNG', wX, wY, wWidth, wHeight);
+            pageContextPdf.restoreGraphicsState();
           } catch(e) {}
         }
 
-        // N° & Date TOP RIGHT
+        // CONTEXTE DOSSIER TOP RIGHT
         pageContextPdf.setTextColor(100, 100, 100);
         pageContextPdf.setFontSize(10);
         pageContextPdf.setFont("helvetica", "bold");
-        pageContextPdf.text(`Dossier N° ${store.numeroAffaire || '-'}`, 196, 16, { align: 'right' });
+        pageContextPdf.text(`Dossier N° ${store.numeroAffaire || '-'}`, 196, 14, { align: 'right' });
+        
         pageContextPdf.setFontSize(9);
         pageContextPdf.setFont("helvetica", "normal");
-        pageContextPdf.text(`Le ${getSafeDateShort(store.date)}`, 196, 22, { align: 'right' });
+        let headerY = 19;
+        
+        if (store.client && store.client.trim() !== '') {
+          pageContextPdf.text(`Client : ${store.client}`, 196, headerY, { align: 'right' });
+          headerY += 5;
+        } else if (store.site && store.site.trim() !== '') {
+          pageContextPdf.text(`Chantier : ${store.site}`, 196, headerY, { align: 'right' });
+          headerY += 5;
+        }
+        
+        if (store.client && store.site && store.site.trim() !== '') {
+          pageContextPdf.text(`Chantier : ${store.site}`, 196, headerY, { align: 'right' });
+          headerY += 5;
+        }
+
+        pageContextPdf.text(`Date : ${getSafeDateShort(store.date)}`, 196, headerY, { align: 'right' });
 
         // TITRE METIER EN DESSOUS (Espacé du logo)
         pageContextPdf.setTextColor(30, 58, 138);
@@ -273,7 +291,12 @@ export function ExportFinal() {
       const addStepSignature = (stepKey: string, stepTitle: string) => {
         const sig = store.stepSignatures?.[stepKey];
         if (!sig) return;
-        if (y > 240) { pdf.addPage(); y = drawHeader(pdf, stepTitle + " (Validation)"); }
+        
+        // Calcul strict du bloc complet : 50mm de haut
+        if (y + 55 > 280) { 
+          pdf.addPage(); 
+          y = drawHeader(pdf, stepTitle + " (Validation)"); 
+        }
         y += 5;
         pdf.setDrawColor(200, 200, 200);
         pdf.setLineWidth(0.5);
