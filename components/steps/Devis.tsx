@@ -109,6 +109,11 @@ export function Devis() {
       mColor = 'text-emerald-400'; mBg = 'bg-emerald-500/10 border-emerald-500/30'; mIcon = '🟢🟢'; mText = 'Très rentable';
     }
 
+    console.log('--- CHIFFRAGE DEBUG ---', {
+      internalTotal, marge, baseHT, finalHT, tvaVal, ttc, acompte, 
+      margePourcentage, tvaPourcentage, prixFinalManuel, ajustementManuel
+    });
+
     return {
       totalMoHT: mo,
       depHT: dep,
