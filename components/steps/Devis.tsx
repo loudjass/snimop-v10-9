@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useDossierStore } from '@/store/useDossierStore';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
@@ -54,41 +54,92 @@ export function Devis() {
   const toggleModeClient = () => store.setField('devisModeClient', !store.devisModeClient);
 
   // --- CALCULS DU MOTEUR ---
-  const totalMoHT = (store.tauxHoraireMO || 0) * (store.heuresMO || 0);
-  const totalNacelleHT = (!store.devisModeRapide && store.nacelleActive) ? (store.coutNacelleHT || 0) : 0;
-  const depHT = !store.devisModeRapide ? (store.coutDeplacementHT || 0) : 0;
-  const autresHT = !store.devisModeRapide ? (store.autresFraisHT || 0) : 0;
-  
-  const coutTotalHT = (store.coutMaterielHT || 0) + totalMoHT + depHT + totalNacelleHT + autresHT;
+  // --- SELECTORS FOR REACTIVITY ---
+  const coutMaterielHT = useDossierStore(s => s.coutMaterielHT) || 0;
+  const tauxHoraireMO = useDossierStore(s => s.tauxHoraireMO) || 0;
+  const heuresMO = useDossierStore(s => s.heuresMO) || 0;
+  const coutDeplacementHT = useDossierStore(s => s.coutDeplacementHT) || 0;
+  const coutNacelleHT = useDossierStore(s => s.coutNacelleHT) || 0;
+  const nacelleActive = useDossierStore(s => s.nacelleActive);
+  const autresFraisHT = useDossierStore(s => s.autresFraisHT) || 0;
+  const margePourcentage = useDossierStore(s => s.margePourcentage) || 0;
+  const tvaPourcentage = useDossierStore(s => s.tvaPourcentage) || 0;
+  const prixFinalManuel = useDossierStore(s => s.prixFinalManuel);
+  const ajustementManuel = useDossierStore(s => s.ajustementManuel) || 0;
+  const devisModeRapide = useDossierStore(s => s.devisModeRapide);
+  const devisModeClient = useDossierStore(s => s.devisModeClient);
+  const acompteDemande = useDossierStore(s => s.acompteDemande);
+  const acomptePourcentage = useDossierStore(s => s.acomptePourcentage) || 0;
+  const prestationType = useDossierStore(s => s.prestationType);
+  const descriptifTravaux = useDossierStore(s => s.descriptifTravaux);
+  const devisMateriel = useDossierStore(s => s.devisMateriel);
 
-  const margeEuros = coutTotalHT * ((store.margePourcentage || 0) / 100);
-  const prixConseilleHT = coutTotalHT + margeEuros;
 
-  // Visual Marge logic
-  const mPct = store.margePourcentage || 0;
-  let margeColor = 'text-green-400';
-  let margeBg = 'bg-green-500/10 border-green-500/30';
-  let margeIcon = '🟢';
-  let margeText = 'Rentable';
-  
-  if (mPct < 10) {
-    margeColor = 'text-red-400'; margeBg = 'bg-red-500/10 border-red-500/30'; margeIcon = '🔴'; margeText = 'Marge trop faible';
-  } else if (mPct <= 25) {
-    margeColor = 'text-yellow-400'; margeBg = 'bg-yellow-500/10 border-yellow-500/30'; margeIcon = '🟡'; margeText = 'Marge correcte';
-  } else if (mPct > 40) {
-    margeColor = 'text-emerald-400'; margeBg = 'bg-emerald-500/10 border-emerald-500/30'; margeIcon = '🟢🟢'; margeText = 'Très rentable';
-  }
+  // --- CALCULATION LOGIC (MEMOIZED) ---
+  const chiffrage = useMemo(() => {
+    const mo = Number(tauxHoraireMO) * Number(heuresMO);
+    const nacelle = (!devisModeRapide && nacelleActive) ? Number(coutNacelleHT) : 0;
+    const dep = !devisModeRapide ? Number(coutDeplacementHT) : 0;
+    const items = !devisModeRapide ? Number(autresFraisHT) : 0;
+    
+    const internalTotal = Number(coutMaterielHT) + mo + dep + nacelle + items;
+    const marge = internalTotal * (Number(margePourcentage) / 100);
+    const baseHT = internalTotal + marge;
+    
+    const isOverride = prixFinalManuel !== null && prixFinalManuel !== undefined && String(prixFinalManuel) !== '';
+    const finalHT = isOverride ? Number(prixFinalManuel) : baseHT + Number(ajustementManuel);
+    
+    // SECURE TVA CALCULATION
+    const tvaVal = finalHT * (Number(tvaPourcentage) / 100);
+    const ttc = finalHT + tvaVal;
+    
+    const acompte = acompteDemande ? ttc * (Number(acomptePourcentage) / 100) : 0;
 
-  // Résolution du prix final
-  const isEcrasementTotal = store.prixFinalManuel !== null && store.prixFinalManuel !== undefined && String(store.prixFinalManuel) !== '';
-  const prixRetenuHT = isEcrasementTotal 
-    ? Number(store.prixFinalManuel) 
-    : prixConseilleHT + (store.ajustementManuel || 0);
+    // Visual Marge logic
+    let mColor = 'text-green-400';
+    let mBg = 'bg-green-500/10 border-green-500/30';
+    let mIcon = '🟢';
+    let mText = 'Rentable';
+    
+    if (margePourcentage < 10) {
+      mColor = 'text-red-400'; mBg = 'bg-red-500/10 border-red-500/30'; mIcon = '🔴'; mText = 'Marge trop faible';
+    } else if (margePourcentage <= 25) {
+      mColor = 'text-yellow-400'; mBg = 'bg-yellow-500/10 border-yellow-500/30'; mIcon = '🟡'; mText = 'Marge correcte';
+    } else if (margePourcentage > 40) {
+      mColor = 'text-emerald-400'; mBg = 'bg-emerald-500/10 border-emerald-500/30'; mIcon = '🟢🟢'; mText = 'Très rentable';
+    }
 
-  const tva = prixRetenuHT * ((store.tvaPourcentage || 0) / 100);
-  const totalTTC = prixRetenuHT + tva;
-  
-  const acompteCalcule = store.acompteDemande ? totalTTC * ((store.acomptePourcentage || 0) / 100) : 0;
+    return {
+      totalMoHT: mo,
+      depHT: dep,
+      totalNacelleHT: nacelle,
+      othersHT: items,
+      coutTotalHT: internalTotal,
+      margeEuros: marge,
+      prixConseilleHT: baseHT,
+      prixRetenuHT: finalHT,
+      tva: tvaVal,
+      totalTTC: ttc,
+      acompteCalcule: acompte,
+      isEcrasementTotal: isOverride,
+      margeColor: mColor,
+      margeBg: mBg,
+      margeIcon: mIcon,
+      margeText: mText
+    };
+  }, [
+    coutMaterielHT, tauxHoraireMO, heuresMO, coutDeplacementHT, coutNacelleHT, 
+    nacelleActive, autresFraisHT, margePourcentage, tvaPourcentage, 
+    prixFinalManuel, ajustementManuel, devisModeRapide, acompteDemande, acomptePourcentage
+  ]);
+
+  // Destructure for easier use in JSX
+  const { 
+    totalMoHT, depHT, totalNacelleHT, othersHT, coutTotalHT, 
+    margeEuros, prixConseilleHT, prixRetenuHT, tva, totalTTC, 
+    acompteCalcule, isEcrasementTotal, margeColor, margeBg, margeIcon, margeText 
+  } = chiffrage;
+
 
   // Visual Pulse on Price Change
   // moved here to avoid "used before declaration" error
@@ -214,7 +265,7 @@ export function Devis() {
                 <span className="text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{totalMoHT.toFixed(2)} € HT</span>
               </h4>
               <div className="grid grid-cols-2 gap-3 mt-1">
-                <Input type="number" step="1" label="TauxHoraire(€)" value={store.tauxHoraireMO || ''} onChange={(e: any) => store.setField('tauxHoraireMO', parseFloat(e.target.value) || 0)} disabled={store.devisModeRapide} />
+                <Input type="number" step="1" label="TauxHoraire(€)" value={store.tauxHoraireMO || ''} onChange={(e: any) => store.setField('tauxHoraireMO', parseFloat(e.target.value) || 0)} />
                 <Input type="number" step="0.5" label="Heures" value={store.heuresMO || ''} onChange={(e: any) => store.setField('heuresMO', parseFloat(e.target.value) || 0)} />
               </div>
               
