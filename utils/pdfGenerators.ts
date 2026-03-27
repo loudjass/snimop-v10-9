@@ -54,9 +54,15 @@ export const drawPageHeader = (
   store: DossierData,
   pageTitle: string
 ): number => {
-  // Fond blanc header
+  // Fond quasi imperceptible blanc cassé
+  pdf.setFillColor(252, 253, 255);
+  pdf.rect(0, 0, 210, 297, 'F');
+  // Ligne accent SNIMOP en haut
+  pdf.setFillColor(30, 58, 138);
+  pdf.rect(0, 0, 210, 1.5, 'F');
+  // Zone en-tête blanche
   pdf.setFillColor(255, 255, 255);
-  pdf.rect(0, 0, 210, 40, 'F');
+  pdf.rect(0, 1.5, 210, 46, 'F');
 
   // Logo top-left
   if (logoData) {

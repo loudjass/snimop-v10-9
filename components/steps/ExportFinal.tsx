@@ -191,16 +191,23 @@ export function ExportFinal() {
       // EN-TÊTE INTÉRIEUR (COMPACT)
       // ==========================================
       const drawHeader = (pageContextPdf: jsPDF, pageTitle: string) => {
-        // Sécurité visuelle avant l'en-tête
+        // Fond quasi imperceptible blanc cassé bleuté
+        pageContextPdf.setFillColor(252, 253, 255);
+        pageContextPdf.rect(0, 0, 210, 297, 'F');
+
+        // Ligne accent SNIMOP en tout haut de page
+        pageContextPdf.setFillColor(30, 58, 138);
+        pageContextPdf.rect(0, 0, 210, 1.5, 'F');
+
+        // Zone en-tête blanche propre
         pageContextPdf.setFillColor(255, 255, 255);
-        pageContextPdf.rect(0, 0, 210, 40, 'F');
+        pageContextPdf.rect(0, 1.5, 210, 46, 'F');
 
         // Logo TOP LEFT (Respect Ratio)
         let lastLogoEndX = 15;
         if (logoData && logoData.img) {
-          let targetWidth = 53; // Légère réduction pour l'équilibre
+          let targetWidth = 53;
           let targetHeight = targetWidth / logoData.ratio;
-          // Sécurité anti-chevauchement
           if (targetHeight > 25) {
             targetHeight = 25;
             targetWidth = targetHeight * logoData.ratio;
@@ -218,16 +225,17 @@ export function ExportFinal() {
         pageContextPdf.setFont("helvetica", "normal");
         pageContextPdf.text(`Le ${getSafeDateShort(store.date)}`, 196, 22, { align: 'right' });
 
-        // TITRE METIER EN DESSOUS (Espacé du logo)
+        // Titre métier
         pageContextPdf.setTextColor(30, 58, 138);
-        pageContextPdf.setFontSize(16);
+        pageContextPdf.setFontSize(15);
         pageContextPdf.setFont("helvetica", "bold");
         pageContextPdf.text(pageTitle.toUpperCase(), 15, 44);
-        
-        // Fine separator
-        pageContextPdf.setDrawColor(200, 200, 200);
+
+        // Séparateur fin
+        pageContextPdf.setDrawColor(195, 210, 235);
         pageContextPdf.setLineWidth(0.3);
         pageContextPdf.line(15, 48, 195, 48);
+
 
         // --- FILIGRANE MASCOTTE SUR TOUTES LES PAGES ---
         if (mascotteData && mascotteData.img) {
@@ -650,36 +658,75 @@ export function ExportFinal() {
       y = addSection("Observations finales", store.observationsFinales);
       await drawSectionPhotos(['Pendant', 'Après', 'Plan', 'Autre']);
 
-      // PAGE 7
+      // PAGE 7 — VALIDATION FINALE
       pdf.addPage();
       y = drawHeader(pdf, "VALIDATION FINALE");
-      y += 10;
-      pdf.setDrawColor(30, 58, 138);
-      pdf.setLineWidth(1);
-      pdf.roundedRect(15, y, 180, 60, 3, 3, 'S'); 
-      pdf.setFontSize(13);
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(30, 58, 138);
-      pdf.text("SIGNATURE CLIENT", 21, y + 12);
-      pdf.setFont("helvetica", "normal");
-      pdf.setTextColor(60, 60, 60);
-      pdf.setFontSize(11);
-      const signataire = store.nomSignataireClient || store.contact || store.client || '';
-      pdf.text(`Nom du signataire : ${signataire ? signataire : 'Non renseigné'}`, 21, y + 20);
+      y += 8;
 
+      // Ombre carte signature
+      pdf.setFillColor(200, 208, 228);
+      pdf.roundedRect(16.5, y + 1.5, 180, 78, 3, 3, 'F');
+
+      // Carte principale
+      pdf.setFillColor(248, 251, 255);
+      pdf.setDrawColor(195, 210, 240);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(15, y, 180, 78, 3, 3, 'FD');
+
+      // Bandeau titre SIGNATURE CLIENT
+      pdf.setFillColor(30, 58, 138);
+      pdf.roundedRect(15, y, 180, 12, 3, 3, 'F');
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(255, 255, 255);
+      pdf.text("SIGNATURE CLIENT", 105, y + 8, { align: 'center' });
+      y += 16;
+
+      // Signataire
+      pdf.setFontSize(9.5);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(60, 75, 100);
+      pdf.text("Nom du signataire :", 22, y);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(30, 40, 60);
+      const signataire = store.nomSignataireClient || store.contact || store.client || '';
+      pdf.text(signataire || 'Non renseigné', 70, y);
+
+      // Zone signature
+      y += 6;
       if (store.signatureClient && store.signatureClient.startsWith('data:image')) {
-        pdf.addImage(store.signatureClient, 'PNG', 21, y + 25, 80, 25);
+        // Léger fond blanc derrière la signature
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(210, 220, 235);
+        pdf.setLineWidth(0.2);
+        pdf.roundedRect(22, y, 84, 28, 2, 2, 'FD');
+        pdf.addImage(store.signatureClient, 'PNG', 23, y + 1, 82, 26);
       } else {
-        pdf.setTextColor(150, 150, 150);
+        pdf.setFillColor(250, 250, 255);
+        pdf.setDrawColor(210, 220, 235);
+        pdf.setLineWidth(0.2);
+        pdf.setLineDashPattern([2, 2], 0);
+        pdf.roundedRect(22, y, 84, 28, 2, 2, 'FD');
+        pdf.setLineDashPattern([], 0);
+        pdf.setFontSize(8);
         pdf.setFont("helvetica", "italic");
-        pdf.text("Signature non renseignée / Document non signé sur place", 21, y + 42);
+        pdf.setTextColor(180, 185, 200);
+        pdf.text("Signature électronique", 64, y + 16, { align: 'center' });
+        pdf.text("non renseignée", 64, y + 22, { align: 'center' });
       }
 
+      // BON POUR ACCORD
       if (store.bonPourAccord) {
-        pdf.setTextColor(30, 58, 138);
-        pdf.setFontSize(15);
+        // Carte verte BPA
+        pdf.setFillColor(22, 101, 52); // vert foncé
+        pdf.roundedRect(112, y, 80, 28, 2, 2, 'F');
+        pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
-        pdf.text("BON POUR ACCORD", 120, y + 42);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text("BON POUR ACCORD", 152, y + 11, { align: 'center' });
+        pdf.setFontSize(7.5);
+        pdf.setFont("helvetica", "normal");
+        pdf.text("Lu et approuvé", 152, y + 20, { align: 'center' });
       }
 
       // ─ Pagination
