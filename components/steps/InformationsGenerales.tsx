@@ -1,16 +1,28 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { useDossierStore } from '@/store/useDossierStore';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, ArrowRight, Download } from 'lucide-react';
 import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
+import { generateInfosPdf, triggerDownload } from '@/utils/pdfGenerators';
 
 export function InformationsGenerales() {
   const store = useDossierStore();
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleNext = () => store.setField('currentStep', 2);
   const handlePrev = () => store.setField('currentStep', 0);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await generateInfosPdf(store);
+      triggerDownload(blob, `SNIMOP_Infos_${store.numeroAffaire || 'SansRef'}.pdf`);
+    } catch (e: any) {
+      alert('Erreur export PDF : ' + (e.message || String(e)));
+    } finally { setIsExporting(false); }
+  };
 
   return (
     <div className="flex flex-col gap-6 py-2">
@@ -18,6 +30,9 @@ export function InformationsGenerales() {
         <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
           Informations générales
         </h2>
+        <Button onClick={handleExport} isLoading={isExporting} variant="outline" className="gap-2 text-sm px-4 py-2 border-blue-500/30 text-blue-300 hover:bg-blue-600/10">
+          <Download className="w-4 h-4" /> Exporter PDF Infos
+        </Button>
       </div>
       
       <div className="bg-[#0f172a]/70 backdrop-blur-2xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-700/50 flex flex-col gap-6">

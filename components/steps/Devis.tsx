@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, ArrowRight, Calculator, Euro, HardHat, Truck, Zap, Eye, Settings2, Users, ChevronUp, X, Download } from 'lucide-react';
 import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
+import { generateDevisPdf, triggerDownload } from '@/utils/pdfGenerators';
 
 const TVAPresetSelector = ({ value, onChange }: { value: number, onChange: (v: number) => void }) => {
   const presets = [20, 10, 5.5];
@@ -45,6 +46,17 @@ export function Devis() {
   const [isVisible, setIsVisible] = useState(false);
   const [isPricePulsing, setIsPricePulsing] = useState(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [isExportingDevis, setIsExportingDevis] = useState(false);
+
+  const handleExportDevis = async () => {
+    try {
+      setIsExportingDevis(true);
+      const blob = await generateDevisPdf(store);
+      triggerDownload(blob, `SNIMOP_Devis_${store.numeroAffaire || 'SansRef'}.pdf`);
+    } catch (e: any) {
+      alert('Erreur export PDF Devis : ' + (e.message || String(e)));
+    } finally { setIsExportingDevis(false); }
+  };
 
   useEffect(() => {
     const state = useDossierStore.getState();
@@ -200,12 +212,15 @@ export function Devis() {
       
       {/* HEADER & TOGGLES */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 border-b border-white/10 pb-4">
-        <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg flex items-center gap-3">
-          <Calculator className="w-8 h-8 md:w-10 md:h-10 text-blue-400" />
+        <h2 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg flex items-center gap-2">
+          <Calculator className="w-6 h-6 text-blue-400" />
           Chiffrage
         </h2>
-        
+
         <div className="flex flex-wrap items-center gap-3">
+          <Button onClick={handleExportDevis} isLoading={isExportingDevis} variant="outline" className="gap-2 text-sm px-4 py-2 border-blue-500/30 text-blue-300 hover:bg-blue-600/10">
+            <Download className="w-4 h-4" /> Exporter PDF Devis
+          </Button>
           <Button 
             variant={store.devisModeRapide ? "default" : "outline"} 
             onClick={toggleModeRapide}
@@ -258,7 +273,7 @@ export function Devis() {
             </div>
             <div className="flex flex-col gap-0.5 col-span-2 md:col-span-4 lg:col-span-1 bg-blue-600/20 rounded-xl border border-blue-400/50 px-3 py-2 items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.2)]">
               <span className="text-[10px] font-black text-blue-300 uppercase tracking-widest">Prix Vente TTC</span>
-              <span className={`font-black text-white text-3xl md:text-4xl drop-shadow-md leading-none transition-transform duration-300 ${isPricePulsing ? 'scale-110' : ''}`}>{totalTTC.toFixed(2)} €</span>
+              <span className={`font-black text-white text-2xl drop-shadow-md leading-none whitespace-nowrap transition-transform duration-300 ${isPricePulsing ? 'scale-110' : ''}`}>{totalTTC.toFixed(2)} €</span>
             </div>
           </div>
         </div>
@@ -587,7 +602,7 @@ export function Devis() {
                   </span>
                   <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">TOTAL TTC</span>
                 </div>
-                <span className={`text-4xl lg:text-5xl font-black text-white font-mono drop-shadow-[0_2px_10px_rgba(59,130,246,0.5)] leading-none transition-transform duration-300 ${isPricePulsing ? 'scale-110' : 'scale-100'}`}>{totalTTC.toFixed(2)} €</span>
+                <span className={`text-3xl font-black text-white font-mono drop-shadow-[0_2px_10px_rgba(59,130,246,0.5)] leading-none whitespace-nowrap transition-transform duration-300 ${isPricePulsing ? 'scale-110' : 'scale-100'}`}>{totalTTC.toFixed(2)} €</span>
               </div>
             </div>
 

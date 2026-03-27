@@ -97,6 +97,20 @@ export interface DossierData {
   photos: Photo[];
   stepSignatures: Record<string, StepSignature>;
   currentStep: number;
+
+  // --- MODALITÉS D'INTERVENTION (onglet VISITE) ---
+  modalitesSite: string;
+  modalitesInstallation: string; // 'neuf' | 'renovation' | ''
+  modalitesDemontage: string[];  // ['enlevement', 'decharge']
+  modalitesElevation: string[];
+  modalitesEspace: string[];
+  modalitesConditions: string[];
+  modalitesHeureOuverture: string;
+  modalitesHeureFermeture: string;
+  modalitesPermis: string[];     // ['travail', 'feu']
+  modalitesStationnement: string[];
+  modalitesRisques: string;
+  modalitesSignatureCharge: string; // base64
 }
 
 export interface StoreState extends DossierData {
@@ -185,6 +199,20 @@ const initialDossierData: Omit<DossierData, 'id' | 'updatedAt' | 'numeroAffaire'
   photos: [],
   stepSignatures: {},
   currentStep: 0,
+
+  // --- MODALITÉS D'INTERVENTION ---
+  modalitesSite: '',
+  modalitesInstallation: '',
+  modalitesDemontage: [],
+  modalitesElevation: [],
+  modalitesEspace: [],
+  modalitesConditions: [],
+  modalitesHeureOuverture: '',
+  modalitesHeureFermeture: '',
+  modalitesPermis: [],
+  modalitesStationnement: [],
+  modalitesRisques: '',
+  modalitesSignatureCharge: '',
 };
 
 // Extrait uniquement les champs d'un dossier depuis le root state

@@ -121,38 +121,56 @@ export function ExportFinal() {
       pdf.setFont("helvetica", "normal");
       pdf.text(`Édité le ${getSafeDateFormatted(store.date)}`, 105, coverY, { align: 'center' });
 
-      // Client block
+      // Carte CLIENT
       coverY += 25;
-      pdf.setFillColor(250, 251, 255); 
-      pdf.setDrawColor(30, 58, 138);
+      // Ombre douce
+      pdf.setFillColor(200, 208, 228);
+      pdf.roundedRect(26.5, coverY + 1.5, 160, 42, 3, 3, 'F');
+      // Carte
+      pdf.setFillColor(248, 251, 255);
+      pdf.setDrawColor(195, 210, 240);
       pdf.setLineWidth(0.3);
-      pdf.roundedRect(25, coverY, 160, 40, 3, 3, 'FD'); 
-      
-      pdf.setTextColor(30, 58, 138);
-      pdf.setFontSize(14);
+      pdf.roundedRect(25, coverY, 160, 42, 3, 3, 'FD');
+      // Label CLIENT
+      pdf.setFillColor(30, 58, 138);
+      pdf.roundedRect(25, coverY, 160, 11, 3, 3, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(11);
       pdf.setFont("helvetica", "bold");
-      pdf.text("CLIENT", 35, coverY + 10);
-      pdf.setTextColor(40, 40, 40);
+      pdf.text("CLIENT", 35, coverY + 7.5);
+      pdf.setTextColor(40, 48, 65);
       pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(12);
-      const clientContent = `Nom : ${store.client || 'Non renseigné'}\nContact : ${store.contact || '-'}\nTél : ${store.telephone || '-'}\nEmail : ${store.email || '-'}`;
-      pdf.text(pdf.splitTextToSize(clientContent, 140), 40, coverY + 18);
-      
-      // Site block
-      coverY += 50;
-      pdf.setFillColor(250, 251, 255);
-      pdf.setDrawColor(30, 58, 138);
-      pdf.roundedRect(25, coverY, 160, 40, 3, 3, 'FD'); 
-      
-      pdf.setTextColor(30, 58, 138);
-      pdf.setFontSize(14);
+      pdf.setFontSize(10.5);
+      const clientContent = `Nom : ${store.client || 'Non renseigné'} \u00b7 Contact : ${store.contact || '-'} \u00b7 T\u00e9l : ${store.telephone || '-'}`;
+      pdf.text(pdf.splitTextToSize(clientContent, 148), 32, coverY + 17);
+      pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
+      pdf.text(`Email : ${store.email || '-'}`, 32, coverY + 28);
+
+      // Carte CHANTIER
+      coverY += 52;
+      // Ombre douce
+      pdf.setFillColor(200, 208, 228);
+      pdf.roundedRect(26.5, coverY + 1.5, 160, 42, 3, 3, 'F');
+      // Carte
+      pdf.setFillColor(248, 251, 255);
+      pdf.setDrawColor(195, 210, 240);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(25, coverY, 160, 42, 3, 3, 'FD');
+      // Label CHANTIER
+      pdf.setFillColor(30, 58, 138);
+      pdf.roundedRect(25, coverY, 160, 11, 3, 3, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(11);
       pdf.setFont("helvetica", "bold");
-      pdf.text("CHANTIER", 35, coverY + 10);
-      pdf.setTextColor(40, 40, 40);
+      pdf.text("CHANTIER", 35, coverY + 7.5);
+      pdf.setTextColor(40, 48, 65);
       pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(12);
-      const siteContent = `Site : ${store.site || 'Non renseigné'}\nAdresse : ${store.adresse || '-'}\nTechnicien assigné : ${store.technicien || '-'}`;
-      pdf.text(pdf.splitTextToSize(siteContent, 140), 40, coverY + 18);
+      pdf.setFontSize(10.5);
+      const siteContent = `Site : ${store.site || 'Non renseign\u00e9'} \u00b7 Adresse : ${store.adresse || '-'}`;
+      pdf.text(pdf.splitTextToSize(siteContent, 148), 32, coverY + 17);
+      pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
+      pdf.text(`Technicien assign\u00e9 : ${store.technicien || '-'}`, 32, coverY + 28);
+
 
       // WATERMARK MASCOTTE PAGE 1
       if (mascotteData && mascotteData.img) {
@@ -225,6 +243,8 @@ export function ExportFinal() {
             pageContextPdf.restoreGraphicsState();
           } catch(e) {}
         }
+
+
         
         return 58; // Breathing room de départ au lieu de 48
       };
@@ -235,132 +255,156 @@ export function ExportFinal() {
       const addSection = (title: string, content?: string | number, halfWidth: boolean = false, xPos: number = 15) => {
         let text = String(content || '').trim();
         if (!text) text = "Non renseigné";
-        if (y > 260) {
-          pdf.addPage();
-          y = drawHeader(pdf, "Suite...");
-        }
-        pdf.setFontSize(11);
+        if (y > 260) { pdf.addPage(); y = drawHeader(pdf, "Suite..."); }
+        pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(30, 58, 138);
         pdf.text(title.toUpperCase(), xPos, y);
-        y += 7; 
-        pdf.setFontSize(11);
+        pdf.setDrawColor(215, 222, 236);
+        pdf.setLineWidth(0.2);
+        pdf.line(xPos, y + 1.5, xPos + (halfWidth ? 85 : 180), y + 1.5);
+        y += 7;
+        pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
-        pdf.setTextColor(50, 50, 50);
+        pdf.setTextColor(55, 65, 81);
         const ObjectifWidth = halfWidth ? 85 : 180;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
         pdf.text(lines, xPos, y);
-        return y + (lines.length * 6) + 16; 
+        return y + (lines.length * 6) + 10;
       };
 
       const addSectionAt = (title: string, content: string | number | undefined, xPos: number, startY: number, halfWidth: boolean = false) => {
         let text = String(content || '').trim();
         if (!text) text = "Non renseigné";
         let localY = startY;
-        pdf.setFontSize(11);
+        pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(30, 58, 138); 
+        pdf.setTextColor(30, 58, 138);
         pdf.text(title.toUpperCase(), xPos, localY);
+        pdf.setDrawColor(215, 222, 236);
+        pdf.setLineWidth(0.2);
+        pdf.line(xPos, localY + 1.5, xPos + (halfWidth ? 85 : 180), localY + 1.5);
         localY += 7;
-        pdf.setFontSize(11);
+        pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
-        pdf.setTextColor(50, 50, 50);
+        pdf.setTextColor(55, 65, 81);
         const ObjectifWidth = halfWidth ? 85 : 180;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
         pdf.text(lines, xPos, localY);
-        return localY + (lines.length * 6) + 16;
+        return localY + (lines.length * 6) + 10;
       };
 
       // HELPER POUR LES PHOTOS PAR SECTION (PREMIUM)
-      const drawSectionPhotos = async (types: string[]) => {
-        const filtered = store.photos.filter(p => types.includes(p.type)).slice(0, 2);
+      const drawSectionPhotos = async (types: string[], sectionLabel?: string) => {
+        const filtered = store.photos.filter(p => types.includes(p.type)).slice(0, 4);
         if (filtered.length === 0) return;
 
-        // Vérifier l'espace restant
-        if (y > 180) {
-          pdf.addPage();
-          y = drawHeader(pdf, "DOCUMENTS & PHOTOS");
-        } else {
-          y += 5;
-        }
-
-        pdf.setFontSize(10);
-        pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(80, 80, 80);
-        pdf.text("PHOTOS ET ILLUSTRATIONS :", 15, y);
-        y += 8;
-
-        const photoWidth = 86; 
-        const photoHeight = 62; 
-        const descBoxHeight = 25; // Un peu plus grand pour le titre
-        const gap = 8;
-        const startX = 15;
+        // Dimensions photo et descriptif
+        const PHOTO_W = 84;
+        const PHOTO_H = 60;
+        const DESC_H  = 28;
+        const GAP     = 8;   // Entre les 2 colonnes
+        const MARGIN_X = 15;
+        const BLOCK_H  = PHOTO_H + DESC_H + 6; // Hauteur totale d'une rangée
 
         // MAP TYPE TO LABEL
         const getPhotoLabel = (type: string) => {
           switch(type) {
-            case 'Avant': return 'ETAT AVANT INTERVENTION';
-            case 'Après': return 'ETAT APRÈS INTERVENTION';
+            case 'Avant':   return 'ÉTAT AVANT INTERVENTION';
+            case 'Après':   return 'ÉTAT APRÈS INTERVENTION';
             case 'Pendant': return 'EN COURS D\'INTERVENTION';
-            case 'Plan': return 'PLAN / SCHÉMA / DOCUMENT';
-            default: return 'OBSERVATION TECHNIQUE';
+            case 'Plan':    return 'PLAN / SCHÉMA / DOCUMENT';
+            default:        return 'OBSERVATION TECHNIQUE';
           }
         };
 
-        for (let i = 0; i < filtered.length; i++) {
-          const photo = filtered[i];
-          const photoData = await loadPhotoBase64(photo.imageBase64);
-          if (photoData) {
-            const containerX = startX + (i % 2) * (photoWidth + gap);
-            const containerY = y;
+        // On traite les photos par rangées de 2
+        for (let row = 0; row < Math.ceil(filtered.length / 2); row++) {
+          const rowPhotos = filtered.slice(row * 2, row * 2 + 2);
 
-            // 1. CADRE PHOTO UNIFORME
-            pdf.setDrawColor(180, 180, 180);
-            pdf.setLineWidth(0.2);
-            pdf.setFillColor(255, 255, 255);
-            pdf.rect(containerX, containerY, photoWidth, photoHeight, 'FD');
-
-            // --- CALCUL RATIO ---
-            let drawWidth = photoWidth - 4; 
-            let drawHeight = drawWidth / photoData.ratio;
-            if (drawHeight > photoHeight - 4) {
-              drawHeight = photoHeight - 4;
-              drawWidth = drawHeight * photoData.ratio;
-            }
-            const offsetX = (photoWidth - drawWidth) / 2;
-            const offsetY = (photoHeight - drawHeight) / 2;
-
-            // Image
-            pdf.addImage(photoData.img, 'JPEG', containerX + offsetX, containerY + offsetY, drawWidth, drawHeight);
-            
-            // 2. BLOC DESCRIPTIF "CHANTIER"
-            const descY = containerY + photoHeight;
-            pdf.setFillColor(248, 248, 248);
-            pdf.setDrawColor(180, 180, 180);
-            pdf.rect(containerX, descY, photoWidth, descBoxHeight, 'FD');
-
-            // Séparateur léger
-            pdf.setDrawColor(220, 220, 220);
-            pdf.line(containerX + 5, descY, containerX + photoWidth - 5, descY);
-
-            // Petit Titre Structuré
-            pdf.setFontSize(7.5);
-            pdf.setFont("helvetica", "bold");
-            pdf.setTextColor(30, 58, 138); // Bleu SNIMOP discret
-            pdf.text(getPhotoLabel(photo.type), containerX + 4, descY + 6);
-
-            // Description avec largeur réduite pour lisibilité
-            pdf.setFontSize(8.5);
-            pdf.setFont("helvetica", "normal");
-            pdf.setTextColor(40, 40, 40);
-            const title = photo.title || "Aucune observation particulière renseignée";
-            const textWidth = photoWidth - 12; // Plus de padding
-            const lines = pdf.splitTextToSize(title, textWidth);
-            pdf.text(lines, containerX + 4, descY + 12);
+          // Créer une nouvelle page si pas assez d'espace
+          const spaceNeeded = BLOCK_H + (row === 0 ? 18 : 4); // Inclure titre section si 1ère rangée
+          if (y + spaceNeeded > 272) {
+            pdf.addPage();
+            y = drawHeader(pdf, sectionLabel || "DOCUMENTS & PHOTOS");
           }
+
+          // Titre de section (uniquement pour la 1ère rangée)
+          if (row === 0) {
+            y += 6;
+            pdf.setFontSize(9.5);
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(80, 80, 80);
+            pdf.text("PHOTOS ET ILLUSTRATIONS :", MARGIN_X, y);
+            // Ligne fine sous le titre
+            pdf.setDrawColor(210, 210, 210);
+            pdf.setLineWidth(0.2);
+            pdf.line(MARGIN_X, y + 2, 195, y + 2);
+            y += 10;
+          }
+
+          // Dessiner chaque photo de la rangée
+          for (let col = 0; col < rowPhotos.length; col++) {
+            const photo = rowPhotos[col];
+            const photoData = await loadPhotoBase64(photo.imageBase64);
+            if (!photoData) continue;
+
+            const containerX = MARGIN_X + col * (PHOTO_W + GAP);
+            const containerY = y;
+            const CARD_H = 87;
+            const IMG_H  = 62;
+
+            // Ombre douce
+            pdf.setFillColor(205, 210, 222);
+            pdf.roundedRect(containerX + 1.5, containerY + 1.5, PHOTO_W, CARD_H, 2, 2, 'F');
+
+            // Carte complète (image + zone info)
+            pdf.setFillColor(252, 253, 255);
+            pdf.setDrawColor(213, 218, 228);
+            pdf.setLineWidth(0.2);
+            pdf.roundedRect(containerX, containerY, PHOTO_W, CARD_H, 2, 2, 'FD');
+
+            // Image centrée dans la zone image
+            const padding = 3;
+            let drawWidth  = PHOTO_W - padding * 2;
+            let drawHeight = drawWidth / photoData.ratio;
+            if (drawHeight > IMG_H - padding * 2) {
+              drawHeight = IMG_H - padding * 2;
+              drawWidth  = drawHeight * photoData.ratio;
+            }
+            const imgX = containerX + (PHOTO_W - drawWidth) / 2;
+            const imgY = containerY + (IMG_H - drawHeight) / 2;
+            pdf.addImage(photoData.img, 'JPEG', imgX, imgY, drawWidth, drawHeight);
+
+            // Séparateur fin bleu entre image et zone info
+            pdf.setDrawColor(30, 58, 138);
+            pdf.setLineWidth(0.4);
+            pdf.line(containerX + 3, containerY + IMG_H, containerX + PHOTO_W - 3, containerY + IMG_H);
+
+            // Badge label type
+            const labelTxt = getPhotoLabel(photo.type);
+            pdf.setFontSize(6.5);
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(30, 58, 138);
+            const lblW = Math.min(pdf.getTextWidth(labelTxt) + 6, PHOTO_W - 8);
+            pdf.setFillColor(239, 246, 255);
+            pdf.roundedRect(containerX + 3, containerY + IMG_H + 2.5, lblW, 6.5, 1, 1, 'F');
+            pdf.text(labelTxt, containerX + 6, containerY + IMG_H + 7.5);
+
+            // Description
+            const desc = (photo.title || '').trim();
+            if (desc) {
+              pdf.setFontSize(7);
+              pdf.setFont("helvetica", "normal");
+              pdf.setTextColor(55, 65, 81);
+              const descLines = pdf.splitTextToSize(desc, PHOTO_W - 8).slice(0, 2);
+              pdf.text(descLines, containerX + 4, containerY + IMG_H + 17);
+            }
+          }
+
+          // Avancer Y après la rangée
+          y += BLOCK_H + 10;
         }
-        
-        y += photoHeight + descBoxHeight + 20;
       };
 
       // PAGE 2
@@ -388,6 +432,112 @@ export function ExportFinal() {
       y = Math.max(yL, yR);
       y = addSection("Option nacelle", store.optionNacelle);
       y = addSection("Remarques", store.remarques);
+
+      // ── MODALITÉS D'INTERVENTION ──
+      const hasModalites = store.modalitesSite || store.modalitesInstallation ||
+        (store.modalitesDemontage?.length ?? 0) > 0 ||
+        (store.modalitesElevation?.length ?? 0) > 0 ||
+        store.modalitesRisques;
+
+      if (hasModalites) {
+        // ─ Évaluation de la hauteur requise avant rendu ─
+        let estimH = 24; // entête
+        if (store.modalitesSite)           estimH += 14;
+        if (store.modalitesInstallation)   estimH += 14;
+        if (store.modalitesDemontage?.length) estimH += 14;
+        if (store.modalitesElevation?.length) estimH += 14;
+        if (store.modalitesEspace?.length)    estimH += 14;
+        if (store.modalitesConditions?.length) estimH += 14;
+        estimH += 14; // horaires + permis
+        if (store.modalitesStationnement?.length) estimH += 14;
+        if (store.modalitesRisques)        estimH += Math.ceil((store.modalitesRisques.length || 0) / 45) * 6 + 14;
+        if (store.modalitesSignatureCharge) estimH += 36;
+
+        // Forcer nouvelle page si pas assez d'espace
+        if (y + estimH > 270) { pdf.addPage(); y = drawHeader(pdf, "VISITE AVANT DEVIS SNIMOP"); }
+        y += 6;
+
+        // Ombre douce de la carte
+        pdf.setFillColor(200, 208, 228);
+        const cardX = 14, cardW = 182;
+        const safeCardH = Math.min(estimH + 2, 230);
+        pdf.roundedRect(cardX + 1.5, y + 1.5, cardW, safeCardH, 3, 3, 'F');
+
+        // Fond de la carte
+        pdf.setFillColor(248, 251, 255);
+        pdf.setDrawColor(195, 210, 240);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(cardX, y, cardW, safeCardH, 3, 3, 'FD');
+
+        // Entête section
+        pdf.setFillColor(30, 58, 138);
+        pdf.roundedRect(cardX, y, cardW, 10, 3, 3, 'F');
+        pdf.setFontSize(9.5);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(255, 255, 255);
+        pdf.text("MODALITÉS D'INTERVENTION", 105, y + 6.5, { align: 'center' });
+        y += 15;
+
+        // Helper avec page-break sécurisé
+        const safeAddGroup = (label: string, val: string) => {
+          if (y + 14 > 278) {
+            pdf.addPage();
+            y = drawHeader(pdf, "VISITE AVANT DEVIS SNIMOP");
+            y += 4;
+            pdf.setFillColor(248, 251, 255);
+            pdf.setDrawColor(195, 210, 240);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(cardX, y, cardW, 8, 2, 2, 'FD');
+            pdf.setFontSize(9);
+            pdf.setFont("helvetica", "italic");
+            pdf.setTextColor(30, 58, 138);
+            pdf.text("MODALITÉS D'INTERVENTION (suite)", cardX + 6, y + 5.5);
+            y += 14;
+          }
+          pdf.setFontSize(8);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(30, 58, 138);
+          pdf.text(label + ' :', cardX + 6, y);
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(50, 58, 75);
+          const valLines = pdf.splitTextToSize(val, cardW - 14);
+          pdf.text(valLines.slice(0, 3), cardX + 6, y + 5);
+          y += Math.max(14, valLines.slice(0, 3).length * 5 + 8);
+        };
+
+        if (store.modalitesSite) safeAddGroup('SITE', store.modalitesSite);
+        if (store.modalitesInstallation) safeAddGroup('INSTALLATION', store.modalitesInstallation === 'neuf' ? 'Neuf' : 'Rénovation');
+        if (store.modalitesDemontage?.length) safeAddGroup('DÉMONTAGE', store.modalitesDemontage.join(' • '));
+        if (store.modalitesElevation?.length) safeAddGroup('ÉLÉVATION', store.modalitesElevation.join(' • '));
+        if (store.modalitesEspace?.length) safeAddGroup('ESPACE NÉCESSAIRE', store.modalitesEspace.join(' • '));
+        if (store.modalitesConditions?.length) safeAddGroup('CONDITIONS', store.modalitesConditions.join(' • '));
+
+        // Horaires + Permis sur deux colonnes
+        if (y + 14 > 278) { pdf.addPage(); y = drawHeader(pdf, "VISITE AVANT DEVIS SNIMOP"); y += 4; }
+        pdf.setFontSize(8); pdf.setFont("helvetica", "bold"); pdf.setTextColor(30, 58, 138);
+        pdf.text('CONTRAINTES HORAIRES :', cardX + 6, y);
+        pdf.text('PERMIS REQUIS :', 105, y);
+        pdf.setFont("helvetica", "normal"); pdf.setTextColor(50, 58, 75);
+        const _hor = `${store.modalitesHeureOuverture || '-'} — ${store.modalitesHeureFermeture || '-'}`;
+        const _perm = store.modalitesPermis?.length ? store.modalitesPermis.join(' • ') : 'Aucun';
+        pdf.text(_hor, cardX + 6, y + 5);
+        pdf.text(_perm, 105, y + 5);
+        y += 14;
+
+        if (store.modalitesStationnement?.length) safeAddGroup('STATIONNEMENT', store.modalitesStationnement.join(' • '));
+        if (store.modalitesRisques) safeAddGroup('RISQUES IDENTIFIÉS', store.modalitesRisques);
+
+        if (store.modalitesSignatureCharge) {
+          if (y + 36 > 278) { pdf.addPage(); y = drawHeader(pdf, "VISITE AVANT DEVIS SNIMOP"); y += 4; }
+          pdf.setFontSize(8); pdf.setFont("helvetica", "bold"); pdf.setTextColor(80, 90, 110);
+          pdf.text("SIGNATURE CHARGÉ D'AFFAIRE :", cardX + 6, y);
+          y += 4;
+          pdf.addImage(store.modalitesSignatureCharge, 'PNG', cardX + 6, y, 70, 20);
+          y += 26;
+        }
+        y += 4; // breathing room
+      }
+
       await drawSectionPhotos(['Avant']);
 
       // PAGE 4
@@ -402,28 +552,80 @@ export function ExportFinal() {
       y = addSection("Options (Nacelle, etc.)", store.devisOptions);
       y = addSection("Réserves / Exclusions", store.reserves);
       
-      if (y > 220) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
-      y += 5;
-      pdf.setFillColor(248, 250, 252);
-      pdf.setDrawColor(226, 232, 240);
-      pdf.setLineWidth(0.5);
-      pdf.roundedRect(15, y, 180, 35, 3, 3, 'FD');
-      y += 12;
-      pdf.setFontSize(12);
+      // CONDITIONS FINANCIÈRES (calcul réel)
+      if (y > 210) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
+      y += 8;
+
+      const _mo = (store.tauxHoraireMO || 0) * (store.heuresMO || 0);
+      const _dep = store.coutDeplacementHT || 0;
+      const _mat = store.coutMaterielHT || 0;
+      const _nac = store.nacelleActive ? (store.coutNacelleHT || 0) : 0;
+      const _aut = store.autresFraisHT || 0;
+      const _int = _mat + _mo + _dep + _nac + _aut;
+      const _marge = _int * ((store.margePourcentage || 0) / 100);
+      const _baseHT = (store.prixFinalManuel !== null && store.prixFinalManuel !== undefined)
+        ? Number(store.prixFinalManuel)
+        : _int + _marge + (store.ajustementManuel || 0);
+      const _tva = _baseHT * ((store.tvaPourcentage || 20) / 100);
+      const _ttc = _baseHT + _tva;
+
+      // Titre section CONDITIONS
+      pdf.setFontSize(10);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(30, 58, 138);
-      pdf.text("CONDITIONS FINANCIÈRES :", 21, y);
+      pdf.text("CONDITIONS FINANCIÈRES", 15, y);
+      pdf.setDrawColor(30, 58, 138);
+      pdf.setLineWidth(0.4);
+      pdf.line(15, y + 2.5, 195, y + 2.5);
       y += 10;
-      pdf.setFontSize(11);
-      pdf.setTextColor(60, 60, 60);
-      pdf.text("Règlement :", 21, y);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(store.conditionsReglement || 'Non renseigné', 46, y);
-      y += 8;
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Délai :", 21, y);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(store.delai || 'Non renseigné', 36, y);
+
+      // Ombre douce
+      pdf.setFillColor(200, 208, 228);
+      pdf.roundedRect(16.5, y + 1.5, 180, 58, 3, 3, 'F');
+      // Carte
+      pdf.setFillColor(248, 251, 255);
+      pdf.setDrawColor(195, 210, 240);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(15, y, 180, 58, 3, 3, 'FD');
+
+      // HT
+      pdf.setFontSize(9.5); pdf.setFont("helvetica", "bold"); pdf.setTextColor(90, 95, 120);
+      pdf.text("Montant HT :", 22, y + 13);
+      pdf.setFont("helvetica", "normal"); pdf.setTextColor(40, 45, 60);
+      pdf.text(`${_baseHT.toFixed(2)} €`, 80, y + 13);
+
+      // TVA
+      pdf.setFont("helvetica", "bold"); pdf.setTextColor(90, 95, 120);
+      pdf.text(`TVA (${store.tvaPourcentage || 20}%) :`, 22, y + 24);
+      pdf.setFont("helvetica", "normal"); pdf.setTextColor(40, 45, 60);
+      pdf.text(`${_tva.toFixed(2)} €`, 80, y + 24);
+
+      // Trait séparateur
+      pdf.setDrawColor(195, 210, 240); pdf.setLineWidth(0.4);
+      pdf.line(22, y + 30, 192, y + 30);
+
+      // TTC bandeau premium
+      pdf.setFillColor(30, 58, 138);
+      pdf.roundedRect(15, y + 33, 180, 22, 2, 2, 'F');
+      pdf.setFontSize(11); pdf.setFont("helvetica", "bold"); pdf.setTextColor(255, 255, 255);
+      pdf.text("TOTAL TTC :", 24, y + 47);
+      pdf.setFontSize(14);
+      pdf.text(`${_ttc.toFixed(2)} €`, 192, y + 47, { align: 'right' });
+
+      y += 62;
+
+      // Acompte discret
+      if (store.acompteDemande) {
+        const _ac = _ttc * ((store.acomptePourcentage || 30) / 100);
+        pdf.setFontSize(8.5); pdf.setTextColor(70, 100, 180); pdf.setFont("helvetica", "normal");
+        pdf.text(`Acompte demandé (${store.acomptePourcentage}%) : ${_ac.toFixed(2)} €`, 22, y);
+        y += 8;
+      }
+      y += 4;
+
+      const yRL = addSectionAt("Règlement", store.conditionsReglement, 15, y, true);
+      const yRR = addSectionAt("Délai", store.delai, 110, y, true);
+      y = Math.max(yRL, yRR);
 
       // PAGE 5
       pdf.addPage();
@@ -478,6 +680,22 @@ export function ExportFinal() {
         pdf.setFontSize(15);
         pdf.setFont("helvetica", "bold");
         pdf.text("BON POUR ACCORD", 120, y + 42);
+      }
+
+      // ─ Pagination
+      const totalPages = pdf.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        pdf.setPage(p);
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(180, 180, 180);
+        pdf.text(`Page ${p} / ${totalPages}`, 195, 291, { align: 'right' });
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.2);
+        pdf.line(15, 288, 195, 288);
+        pdf.setTextColor(200, 200, 200);
+        pdf.setFontSize(7.5);
+        pdf.text('SNIMOP — Document confidentiel', 15, 291);
       }
 
       return pdf.output('blob');

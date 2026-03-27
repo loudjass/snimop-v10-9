@@ -1,14 +1,26 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDossierStore } from '@/store/useDossierStore';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, ArrowRight, Download } from 'lucide-react';
 import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
+import { generateBonPdf, triggerDownload } from '@/utils/pdfGenerators';
 
 export function BonIntervention() {
   const store = useDossierStore();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await generateBonPdf(store);
+      triggerDownload(blob, `SNIMOP_BonIntervention_${store.numeroAffaire || 'SansRef'}.pdf`);
+    } catch (e: any) {
+      alert('Erreur export PDF Bon : ' + (e.message || String(e)));
+    } finally { setIsExporting(false); }
+  };
 
   useEffect(() => {
     const state = useDossierStore.getState();
@@ -30,6 +42,9 @@ export function BonIntervention() {
         <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
           Bon d'intervention
         </h2>
+        <Button onClick={handleExport} isLoading={isExporting} variant="outline" className="gap-2 text-sm px-4 py-2 border-blue-500/30 text-blue-300 hover:bg-blue-600/10">
+          <Download className="w-4 h-4" /> Exporter PDF Bon
+        </Button>
       </div>
       <p className="text-sm font-medium text-blue-200 bg-blue-900/30 backdrop-blur-md p-4 rounded-2xl border border-blue-500/20 shadow-inner">
         Les informations ont été récupérées du devis / visite.

@@ -82,7 +82,7 @@ export default function Home() {
 
         {/* Stepper Premium */}
         {currentStep > 0 && currentStep <= 6 && (
-          <div className="bg-slate-900/50 backdrop-blur-lg border-b border-white/5 py-4 px-2 mb-6 overflow-x-auto shadow-xl sticky top-[60px] z-40">
+          <div className="bg-slate-900/50 backdrop-blur-lg border-b border-white/5 py-4 px-2 mb-6 overflow-x-auto shadow-xl sticky top-[76px] z-40">
             <div className="flex items-center min-w-max px-2 justify-between max-w-3xl mx-auto">
               {steps.map((step, idx) => (
                 <div key={step.id} className="flex items-center flex-1">
