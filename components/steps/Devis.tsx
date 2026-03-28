@@ -296,9 +296,33 @@ export function Devis() {
           </div>
         )}
 
-        <Textarea label="Descriptif des travaux" value={store.descriptifTravaux} onChange={(e: any) => store.setField('descriptifTravaux', e.target.value)} />
+        <div className="flex justify-between items-end mb-2">
+          <label className="text-sm font-bold text-slate-300 uppercase tracking-widest hidden">Actions</label>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              const action = store.interventionType?.toLowerCase() || 'une opération technique';
+              const element = store.equipement?.toLowerCase() || 'votre installation';
+              const mat = store.materielEnvisage || store.devisMateriel ? ` avec fourniture de ${store.materielEnvisage || store.devisMateriel}` : '';
+              const duree = store.heuresMO ? ` (Temps estimé : ${store.heuresMO}h)` : '';
+              
+              const resumeAuto = `SNIMOP intervient pour ${action} sur ${element}${mat}, incluant la mise en service${duree}.`;
+              
+              if (!store.resumeIntervention) store.setField('resumeIntervention', resumeAuto);
+              if (!store.descriptifTravaux) {
+                 store.setField('descriptifTravaux', `Suite à notre analyse, nous vous proposons la solution suivante pour sécuriser et optimiser ${element} :\n\n- Mise en sécurité de la zone d'intervention\n- Réalisation de la prestation technique dans les règles de l'art\n- Tests de bon fonctionnement et remise en service`);
+              }
+            }}
+            className="text-xs w-full bg-indigo-500/10 text-indigo-300 border-indigo-500/40 hover:bg-indigo-500/30 font-bold gap-2"
+          >
+            ✨ Générer textes (Auto)
+          </Button>
+        </div>
+
+        <Textarea label="Résumé de l'intervention" value={store.resumeIntervention || ''} onChange={(e: any) => store.setField('resumeIntervention', e.target.value)} placeholder="Ex: SNIMOP intervient pour [action] sur [équipement]..." />
+        <Textarea label="Solution proposée (Descriptif)" value={store.descriptifTravaux} onChange={(e: any) => store.setField('descriptifTravaux', e.target.value)} />
         {!store.devisModeClient && !store.devisModeRapide && (
-          <Textarea label="Détail interne du matériel prévu" value={store.devisMateriel} onChange={(e: any) => store.setField('devisMateriel', e.target.value)} />
+          <Textarea label="Matériel fourni (Détail)" value={store.devisMateriel} onChange={(e: any) => store.setField('devisMateriel', e.target.value)} />
         )}
       </div>
 

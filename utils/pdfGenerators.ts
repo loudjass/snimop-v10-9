@@ -98,7 +98,7 @@ export const drawPageHeader = (
       const mw = 120;
       const mh = mw / mascotteData.ratio;
       pdf.saveGraphicsState();
-      pdf.setGState(new (pdf as any).GState({ opacity: 0.04 }));
+      pdf.setGState(new (pdf as any).GState({ opacity: 0.07 }));
       pdf.addImage(mascotteData.img, 'PNG', (210 - mw) / 2, (297 - mh) / 2 + 10, mw, mh);
       pdf.restoreGraphicsState();
     } catch (_) {}
@@ -132,8 +132,9 @@ const addSection = (
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   const lines = pdf.splitTextToSize(text, maxWidth);
-  pdf.text(lines, xPos, y);
-  return y + lines.length * 6 + 10;
+  // Small padding for long texts
+  pdf.text(lines, xPos, y + (lines.length > 2 ? 1 : 0));
+  return y + lines.length * 6 + 12; // increased bottom spacing
 };
 
 // ─────────────────────────────────────────────
@@ -276,13 +277,13 @@ const drawSignatureBlock = (
 
   // Ombre carte signature
   pdf.setFillColor(200, 208, 228);
-  pdf.roundedRect(16.5, y + 1.5, 180, 78, 3, 3, 'F');
+  pdf.roundedRect(16.5, y + 1.5, 180, 84, 3, 3, 'F');
 
   // Carte principale
   pdf.setFillColor(248, 251, 255);
   pdf.setDrawColor(195, 210, 240);
   pdf.setLineWidth(0.3);
-  pdf.roundedRect(15, y, 180, 78, 3, 3, 'FD');
+  pdf.roundedRect(15, y, 180, 84, 3, 3, 'FD');
 
   // Bandeau titre
   pdf.setFillColor(30, 58, 138);
@@ -323,6 +324,15 @@ const drawSignatureBlock = (
       pdf.text('Signature électronique', x + 42, sigY + 16, { align: 'center' });
       pdf.text('non renseignée', x + 42, sigY + 22, { align: 'center' });
     }
+
+    if (label === 'Client') {
+      pdf.setFillColor(230, 250, 240); // Vert très clair
+      pdf.roundedRect(x + 48, y - 4, 36, 5, 1, 1, 'F');
+      pdf.setFontSize(5.5);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(22, 101, 52); // Vert foncé
+      pdf.text("LU ET APPROUVÉ", x + 66, y - 0.5, { align: 'center' });
+    }
   };
 
   drawOneSig('Intervenant', sig.technicienNom || '', sig.technicienSignature || '', 22);
@@ -336,9 +346,15 @@ const drawSignatureBlock = (
       pdf.setTextColor(150, 150, 150);
       pdf.text(`Signé le ${format(d, "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 190, y + 42, { align: 'right' });
     }
+  } else {
+    // Generate auto-date with time
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'italic');
+    pdf.setTextColor(150, 150, 150);
+    pdf.text(`Signé le ${format(new Date(), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 190, y + 42, { align: 'right' });
   }
 
-  return y + 66;
+  return y + 72;
 };
 
 // ─────────────────────────────────────────────
@@ -456,9 +472,9 @@ export const generateVisitePdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'Contexte / Demande client', store.contexte || store.constat, y);
   y = addSection(pdf, 'Constat sur place', store.constat, y);
   y = addSection(pdf, 'Équipement concerné', store.equipement, y);
-  y = addSection(pdf, 'Observations', store.observations, y);
-  y = addSection(pdf, 'Travaux à réaliser', store.travauxPreconises, y);
-  y = addSection(pdf, 'Matériel nécessaire', store.materielEnvisage, y);
+  y = addSection(pdf, 'ANALYSE & RECOMMANDATIONS', store.observations, y);
+  y = addSection(pdf, 'SOLUTION PROPOSÉE', store.travauxPreconises, y);
+  y = addSection(pdf, 'MATÉRIEL FOURNI', store.materielEnvisage, y);
 
   const yL = addSection(pdf, 'Main d\'œuvre estimée', store.moEstimee, y, 14, 85);
   const yR = addSection(pdf, 'Déplacement', store.deplacement, y, 110, 85);
@@ -580,8 +596,11 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
 
   let y = drawPageHeader(pdf, logo, masc, store, 'DEVIS SNIMOP');
 
-  y = addSection(pdf, 'Descriptif des travaux', store.descriptifTravaux, y);
-  y = addSection(pdf, 'Matériel nécessaire', store.devisMateriel, y);
+  if (store.resumeIntervention) {
+    y = addSection(pdf, "RÉSUMÉ DE L'INTERVENTION", store.resumeIntervention, y);
+  }
+  y = addSection(pdf, 'SOLUTION PROPOSÉE', store.descriptifTravaux, y);
+  y = addSection(pdf, 'MATÉRIEL FOURNI', store.devisMateriel, y);
 
   const yL = addSection(pdf, 'Main d\'œuvre', store.devisMo, y, 14, 85);
   const yR = addSection(pdf, 'Déplacement', store.devisDeplacement, y, 110, 85);
@@ -591,6 +610,23 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'Réserves / Exclusions', store.reserves, y);
   y = addSection(pdf, 'Conditions de règlement', store.conditionsReglement, y);
   y = addSection(pdf, 'Délai de réalisation', store.delai, y);
+
+  // CARTE VALEUR AJOUTÉE SNIMOP
+  y = ensureSpace(pdf, y, 40, logo, masc, store, 'DEVIS SNIMOP');
+  pdf.setFillColor(248, 251, 255);
+  pdf.setDrawColor(215, 222, 236);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(15, y, 180, 26, 2, 2, 'FD');
+  pdf.setFontSize(8.5);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 58, 138);
+  pdf.text('VALEUR AJOUTÉE SNIMOP', 20, y + 6);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8.5);
+  pdf.setTextColor(60, 70, 85);
+  pdf.text('✓ Réactivité garantie      ✓ Expertise technique confirmée      ✓ Matériel professionnel      ✓ Accompagnement sur-mesure', 20, y + 14);
+  pdf.text('Notre priorité : vous assurer une prestation de qualité, claire et durable.', 20, y + 21);
+  y += 32;
 
   // ── BLOC FINANCIER PREMIUM ──
   const tauxHoraire = store.tauxHoraireMO || 65;
@@ -685,8 +721,8 @@ export const generateBonPdf = async (store: DossierData): Promise<Blob> => {
   let y = drawPageHeader(pdf, logo, masc, store, "BON D'INTERVENTION SNIMOP");
 
   y = addSection(pdf, "Date d'intervention prévue", store.dateIntervention ? safeDateLong(store.dateIntervention) : '', y);
-  y = addSection(pdf, 'Nature des travaux à réaliser', store.natureTravaux, y);
-  y = addSection(pdf, 'Matériel prévu', store.materielPrevu, y);
+  y = addSection(pdf, 'SOLUTION PROPOSÉE', store.natureTravaux, y);
+  y = addSection(pdf, 'MATÉRIEL FOURNI', store.materielPrevu, y);
   y = addSection(pdf, 'Consignes / Remarques', store.consignes, y);
 
   const yRef = { y };
@@ -709,7 +745,7 @@ export const generateRapportPdf = async (store: DossierData): Promise<Blob> => {
   const logo = await loadLogoBase64();
   const masc = await loadMascotteBase64();
 
-  let y = drawPageHeader(pdf, logo, masc, store, "RAPPORT D'INTERVENTION SNIMOP");
+  let y = drawPageHeader(pdf, logo, masc, store, "COMPTE RENDU D'INTERVENTION");
 
   y = addSection(pdf, "Nature réelle de l'intervention", store.natureReelle, y);
   y = addSection(pdf, 'Travaux réalisés', store.travauxRealises, y);

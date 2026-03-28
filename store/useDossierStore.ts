@@ -48,6 +48,7 @@ export interface DossierData {
   remarques: string;
 
   descriptifTravaux: string;
+  resumeIntervention: string;
   devisMateriel: string;
   devisMo: string;
   devisDeplacement: string;
@@ -152,6 +153,7 @@ const initialDossierData: Omit<DossierData, 'id' | 'updatedAt' | 'numeroAffaire'
   remarques: '',
 
   descriptifTravaux: '',
+  resumeIntervention: '',
   devisMateriel: '',
   devisMo: '',
   devisDeplacement: '',

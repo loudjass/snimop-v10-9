@@ -181,7 +181,7 @@ export function ExportFinal() {
           const markY = 297 - markHeight - 20; // Bottom 
           
           pdf.saveGraphicsState();
-          pdf.setGState(new (pdf as any).GState({ opacity: 0.06 }));
+          pdf.setGState(new (pdf as any).GState({ opacity: 0.07 }));
           pdf.addImage(mascotteData.img, 'PNG', markX, markY, markWidth, markHeight);
           pdf.restoreGraphicsState();
         } catch(e) { console.error("Watermark error", e); }
@@ -246,7 +246,7 @@ export function ExportFinal() {
             const markY = (297 - markHeight) / 2 + 10;
             
             pageContextPdf.saveGraphicsState();
-            pageContextPdf.setGState(new (pageContextPdf as any).GState({ opacity: 0.04 }));
+            pageContextPdf.setGState(new (pageContextPdf as any).GState({ opacity: 0.07 }));
             pageContextPdf.addImage(mascotteData.img, 'PNG', markX, markY, markWidth, markHeight);
             pageContextPdf.restoreGraphicsState();
           } catch(e) {}
@@ -277,8 +277,9 @@ export function ExportFinal() {
         pdf.setTextColor(55, 65, 81);
         const ObjectifWidth = halfWidth ? 85 : 180;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
-        pdf.text(lines, xPos, y);
-        return y + (lines.length * 6) + 10;
+        // Small padding for long texts
+        pdf.text(lines, xPos, y + (lines.length > 2 ? 1 : 0));
+        return y + (lines.length * 6) + 12; // increased bottom spacing
       };
 
       const addSectionAt = (title: string, content: string | number | undefined, xPos: number, startY: number, halfWidth: boolean = false) => {
@@ -298,8 +299,8 @@ export function ExportFinal() {
         pdf.setTextColor(55, 65, 81);
         const ObjectifWidth = halfWidth ? 85 : 180;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
-        pdf.text(lines, xPos, localY);
-        return localY + (lines.length * 6) + 10;
+        pdf.text(lines, xPos, localY + (lines.length > 2 ? 1 : 0));
+        return localY + (lines.length * 6) + 12;
       };
 
       // HELPER POUR LES PHOTOS PAR SECTION (PREMIUM)
@@ -431,9 +432,9 @@ export function ExportFinal() {
       y = drawHeader(pdf, "VISITE AVANT DEVIS SNIMOP");
       y = addSection("Contexte et Constat", store.constat || store.contexte);
       y = addSection("Équipement concerné", store.equipement);
-      y = addSection("Observations", store.observations); 
-      y = addSection("Travaux à réaliser", store.travauxPreconises);
-      y = addSection("Matériel nécessaire", store.materielEnvisage);
+      y = addSection("ANALYSE & RECOMMANDATIONS", store.observations); 
+      y = addSection("SOLUTION PROPOSÉE", store.travauxPreconises);
+      y = addSection("MATÉRIEL FOURNI", store.materielEnvisage);
       yTopLine = y;
       yL = addSectionAt("Main d'œuvre estimée", store.moEstimee, 14, yTopLine, true);
       yR = addSectionAt("Déplacement", store.deplacement, 110, yTopLine, true);
@@ -551,8 +552,11 @@ export function ExportFinal() {
       // PAGE 4
       pdf.addPage();
       y = drawHeader(pdf, "DEVIS SNIMOP");
-      y = addSection("Descriptif des travaux", store.descriptifTravaux);
-      y = addSection("Matériel nécessaire", store.devisMateriel);
+      if (store.resumeIntervention) {
+         y = addSection("RÉSUMÉ DE L'INTERVENTION", store.resumeIntervention);
+      }
+      y = addSection("SOLUTION PROPOSÉE", store.descriptifTravaux);
+      y = addSection("MATÉRIEL FOURNI", store.devisMateriel);
       yTopLine = y;
       yL = addSectionAt("Main d'œuvre", store.devisMo, 14, yTopLine, true);
       yR = addSectionAt("Déplacement", store.devisDeplacement, 110, yTopLine, true);
@@ -560,6 +564,23 @@ export function ExportFinal() {
       y = addSection("Options (Nacelle, etc.)", store.devisOptions);
       y = addSection("Réserves / Exclusions", store.reserves);
       
+      // CARTE VALEUR AJOUTÉE SNIMOP
+      if (y + 35 > 260) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
+      pdf.setFillColor(248, 251, 255);
+      pdf.setDrawColor(215, 222, 236);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(15, y, 180, 26, 2, 2, 'FD');
+      pdf.setFontSize(8.5);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(30, 58, 138);
+      pdf.text("VALEUR AJOUTÉE SNIMOP", 20, y + 6);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(60, 70, 85);
+      pdf.text("✓ Réactivité garantie      ✓ Expertise technique confirmée      ✓ Matériel professionnel      ✓ Accompagnement sur-mesure", 20, y + 14);
+      pdf.text("Notre priorité : vous assurer une prestation de qualité, claire et durable.", 20, y + 21);
+      y += 32;
+
       // CONDITIONS FINANCIÈRES (calcul réel)
       if (y > 210) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
       y += 8;
@@ -639,14 +660,14 @@ export function ExportFinal() {
       pdf.addPage();
       y = drawHeader(pdf, "BON D'INTERVENTION SNIMOP");
       y = addSection("Date d'intervention prévue", store.dateIntervention);
-      y = addSection("Nature des travaux à réaliser", store.natureTravaux);
-      y = addSection("Matériel nécessaire", store.materielPrevu); 
+      y = addSection("SOLUTION PROPOSÉE", store.natureTravaux);
+      y = addSection("MATÉRIEL FOURNI", store.materielPrevu);
       y = addSection("Consignes et Remarques", store.consignes);
       await drawSectionPhotos(['Avant', 'Pendant']);
 
       // PAGE 6
       pdf.addPage();
-      y = drawHeader(pdf, "RAPPORT D'INTERVENTION SNIMOP");
+      y = drawHeader(pdf, "COMPTE RENDU D'INTERVENTION");
       y = addSection("Nature réelle de l'intervention", store.natureReelle);
       y = addSection("Travaux réalisés", store.travauxRealises);
       y = addSection("Matériel utilisé", store.materielUtilise);
@@ -665,13 +686,13 @@ export function ExportFinal() {
 
       // Ombre carte signature
       pdf.setFillColor(200, 208, 228);
-      pdf.roundedRect(16.5, y + 1.5, 180, 78, 3, 3, 'F');
+      pdf.roundedRect(16.5, y + 1.5, 180, 84, 3, 3, 'F');
 
       // Carte principale
       pdf.setFillColor(248, 251, 255);
       pdf.setDrawColor(195, 210, 240);
       pdf.setLineWidth(0.3);
-      pdf.roundedRect(15, y, 180, 78, 3, 3, 'FD');
+      pdf.roundedRect(15, y, 180, 84, 3, 3, 'FD');
 
       // Bandeau titre SIGNATURE CLIENT
       pdf.setFillColor(30, 58, 138);
@@ -720,13 +741,26 @@ export function ExportFinal() {
         // Carte verte BPA
         pdf.setFillColor(22, 101, 52); // vert foncé
         pdf.roundedRect(112, y, 80, 28, 2, 2, 'F');
-        pdf.setFontSize(9);
+        // Badge LU ET APPROUVÉ
+        pdf.setFillColor(255, 255, 255);
+        pdf.roundedRect(132, y + 3, 40, 6, 1, 1, 'F');
+        pdf.setFontSize(7);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(22, 101, 52);
+        pdf.text("LU ET APPROUVÉ", 152, y + 7.5, { align: 'center' });
+        // Text BPA
+        pdf.setFontSize(9.5);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(255, 255, 255);
-        pdf.text("BON POUR ACCORD", 152, y + 11, { align: 'center' });
-        pdf.setFontSize(7.5);
+        pdf.text("BON POUR ACCORD", 152, y + 15, { align: 'center' });
+        // Date/heure automatique
+        pdf.setFontSize(7);
         pdf.setFont("helvetica", "normal");
-        pdf.text("Lu et approuvé", 152, y + 20, { align: 'center' });
+        pdf.setTextColor(200, 230, 210);
+        const signedAt = store.stepSignatures?.['devis']?.dateSignature 
+           ? format(new Date(store.stepSignatures['devis'].dateSignature), "dd/MM/yyyy à HH:mm", { locale: fr })
+           : format(new Date(), "dd/MM/yyyy à HH:mm", { locale: fr });
+        pdf.text(`Signé le ${signedAt}`, 152, y + 23, { align: 'center' });
       }
 
       // ─ Pagination
