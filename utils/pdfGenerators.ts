@@ -273,47 +273,72 @@ const drawSignatureBlock = (
   if (!hasAnySig && !sig.technicienNom && !sig.clientNom) return y;
 
   y += 8;
-  pdf.setDrawColor(200, 200, 200);
-  pdf.setLineWidth(0.3);
-  pdf.line(15, y, 195, y);
-  y += 6;
 
-  pdf.setFontSize(11);
+  // Ombre carte signature
+  pdf.setFillColor(200, 208, 228);
+  pdf.roundedRect(16.5, y + 1.5, 180, 78, 3, 3, 'F');
+
+  // Carte principale
+  pdf.setFillColor(248, 251, 255);
+  pdf.setDrawColor(195, 210, 240);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(15, y, 180, 78, 3, 3, 'FD');
+
+  // Bandeau titre
+  pdf.setFillColor(30, 58, 138);
+  pdf.roundedRect(15, y, 180, 12, 3, 3, 'F');
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(30, 58, 138);
-  pdf.text(`VISA — ${title.toUpperCase()}`, 15, y);
-  y += 8;
+  pdf.setTextColor(255, 255, 255);
+  pdf.text(`VISA — ${title.toUpperCase()}`, 105, y + 8, { align: 'center' });
+  y += 16;
 
   const drawOneSig = (label: string, nom: string, sigB64: string, x: number) => {
-    pdf.setFontSize(9);
+    pdf.setFontSize(9.5);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(80, 80, 80);
-    pdf.text(`${label} : ${nom || 'Non renseigné'}`, x, y);
+    pdf.setTextColor(60, 75, 100);
+    pdf.text(`${label} :`, x, y);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(30, 40, 60);
+    pdf.text(nom || 'Non renseigné', x + pdf.getTextWidth(`${label} :`) + 2, y);
+
+    const sigY = y + 6;
     if (sigB64 && sigB64.startsWith('data:image')) {
-      pdf.addImage(sigB64, 'PNG', x, y + 3, 75, 22);
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(210, 220, 235);
+      pdf.setLineWidth(0.2);
+      pdf.roundedRect(x, sigY, 84, 28, 2, 2, 'FD');
+      pdf.addImage(sigB64, 'PNG', x + 1, sigY + 1, 82, 26);
     } else {
-      pdf.setTextColor(160, 160, 160);
-      pdf.setFont('helvetica', 'italic');
+      pdf.setFillColor(250, 250, 255);
+      pdf.setDrawColor(210, 220, 235);
+      pdf.setLineWidth(0.2);
+      pdf.setLineDashPattern([2, 2], 0);
+      pdf.roundedRect(x, sigY, 84, 28, 2, 2, 'FD');
+      pdf.setLineDashPattern([], 0);
       pdf.setFontSize(8);
-      pdf.text('Signature non renseignée', x, y + 12);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setTextColor(180, 185, 200);
+      pdf.text('Signature électronique', x + 42, sigY + 16, { align: 'center' });
+      pdf.text('non renseignée', x + 42, sigY + 22, { align: 'center' });
     }
   };
 
-  drawOneSig('Intervenant', sig.technicienNom || '', sig.technicienSignature || '', 15);
-  drawOneSig('Client', sig.clientNom || '', sig.clientSignature || '', 110);
+  drawOneSig('Intervenant', sig.technicienNom || '', sig.technicienSignature || '', 22);
+  drawOneSig('Client', sig.clientNom || '', sig.clientSignature || '', 108);
 
   if (sig.dateSignature) {
     const d = new Date(sig.dateSignature);
     if (isValid(d)) {
-      y += 30;
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'italic');
       pdf.setTextColor(150, 150, 150);
-      pdf.text(`Signé le ${format(d, "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 195, y, { align: 'right' });
+      pdf.text(`Signé le ${format(d, "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 190, y + 42, { align: 'right' });
     }
   }
 
-  return y + 32;
+  return y + 66;
 };
 
 // ─────────────────────────────────────────────
@@ -367,12 +392,50 @@ export const generateInfosPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'Dossier N°', store.numeroAffaire, y);
   y = addSection(pdf, 'Date', safeDateLong(store.date), y);
 
-  const clientText = `Nom : ${store.client || '-'}\nContact : ${store.contact || '-'}\nTél : ${store.telephone || '-'}\nEmail : ${store.email || '-'}`;
-  const siteText = `Site : ${store.site || '-'}\nAdresse : ${store.adresse || '-'}\nTechnicien : ${store.technicien || '-'}`;
+  y += 6;
+  // ── CARTE CLIENT ──
+  pdf.setFillColor(200, 208, 228);
+  pdf.roundedRect(16.5, y + 1.5, 180, 42, 3, 3, 'F');
+  pdf.setFillColor(248, 251, 255);
+  pdf.setDrawColor(195, 210, 240);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(15, y, 180, 42, 3, 3, 'FD');
+  pdf.setFillColor(30, 58, 138);
+  pdf.roundedRect(15, y, 180, 11, 3, 3, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('CLIENT', 25, y + 7.5);
+  pdf.setTextColor(40, 48, 65);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(10.5);
+  const clientContent = `Nom : ${store.client || 'Non renseigné'} · Contact : ${store.contact || '-'} · Tél : ${store.telephone || '-'}`;
+  pdf.text(pdf.splitTextToSize(clientContent, 160), 22, y + 17);
+  pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
+  pdf.text(`Email : ${store.email || '-'}`, 22, y + 28);
+  y += 52;
 
-  const yL = addSection(pdf, 'Client', clientText, y, 14, 85);
-  const yR = addSection(pdf, 'Chantier', siteText, y, 110, 85);
-  y = Math.max(yL, yR);
+  // ── CARTE CHANTIER ──
+  pdf.setFillColor(200, 208, 228);
+  pdf.roundedRect(16.5, y + 1.5, 180, 42, 3, 3, 'F');
+  pdf.setFillColor(248, 251, 255);
+  pdf.setDrawColor(195, 210, 240);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(15, y, 180, 42, 3, 3, 'FD');
+  pdf.setFillColor(30, 58, 138);
+  pdf.roundedRect(15, y, 180, 11, 3, 3, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('CHANTIER', 25, y + 7.5);
+  pdf.setTextColor(40, 48, 65);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(10.5);
+  const siteContent = `Site : ${store.site || 'Non renseigné'} · Adresse : ${store.adresse || '-'}`;
+  pdf.text(pdf.splitTextToSize(siteContent, 160), 22, y + 17);
+  pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
+  pdf.text(`Technicien assigné : ${store.technicien || '-'}`, 22, y + 28);
+  y += 50;
 
   y = addSection(pdf, 'Type d\'intervention', store.interventionType, y);
   y = addSection(pdf, 'Objet / Intitulé', store.objet, y);
@@ -408,54 +471,88 @@ export const generateVisitePdf = async (store: DossierData): Promise<Blob> => {
   const m = store;
   const hasModalites = m.modalitesSite || m.modalitesInstallation || m.modalitesDemontage?.length || m.modalitesElevation?.length || m.modalitesRisques;
   if (hasModalites) {
-    y = ensureSpace(pdf, y, 20, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP');
+    let estimH = 24;
+    if (m.modalitesSite)           estimH += 14;
+    if (m.modalitesInstallation)   estimH += 14;
+    if (m.modalitesDemontage?.length) estimH += 14;
+    if (m.modalitesElevation?.length) estimH += 14;
+    if (m.modalitesEspace?.length)    estimH += 14;
+    if (m.modalitesConditions?.length) estimH += 14;
+    estimH += 14; // horaires + permis
+    if (m.modalitesStationnement?.length) estimH += 14;
+    if (m.modalitesRisques)        estimH += Math.ceil((m.modalitesRisques.length || 0) / 45) * 6 + 14;
+    if (m.modalitesSignatureCharge) estimH += 36;
+
+    y = ensureSpace(pdf, y, estimH > 200 ? 50 : estimH, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP');
     y += 6;
 
-    // Entête bleu
+    const cardX = 14, cardW = 182;
+    const safeCardH = Math.min(estimH + 2, 230);
+    pdf.setFillColor(200, 208, 228);
+    pdf.roundedRect(cardX + 1.5, y + 1.5, cardW, safeCardH, 3, 3, 'F');
+
+    pdf.setFillColor(248, 251, 255);
+    pdf.setDrawColor(195, 210, 240);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(cardX, y, cardW, safeCardH, 3, 3, 'FD');
+
     pdf.setFillColor(30, 58, 138);
-    pdf.roundedRect(15, y, 180, 10, 2, 2, 'F');
+    pdf.roundedRect(cardX, y, cardW, 10, 3, 3, 'F');
     pdf.setFontSize(9.5);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
     pdf.text("MODALITÉS D'INTERVENTION", 105, y + 6.5, { align: 'center' });
     y += 15;
 
-    // Helper groupe compact
-    const addGroup = (lbl: string, val: string) => {
-      pdf.setFontSize(8.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 58, 138);
-      pdf.text(lbl.toUpperCase() + ' :', 15, y);
-      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(50, 55, 65);
-      pdf.text(val, 15, y + 5); y += 14;
+    const safeAddGroup = (lbl: string, val: string) => {
+      if (y + 14 > 278) {
+        y = ensureSpace(pdf, y, 100, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP');
+        y += 4;
+        pdf.setFillColor(248, 251, 255);
+        pdf.setDrawColor(195, 210, 240);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(cardX, y, cardW, 8, 2, 2, 'FD');
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'italic');
+        pdf.setTextColor(30, 58, 138);
+        pdf.text("MODALITÉS D'INTERVENTION (suite)", cardX + 6, y + 5.5);
+        y += 14;
+      }
+      pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 58, 138);
+      pdf.text(lbl.toUpperCase() + ' :', cardX + 6, y);
+      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(50, 58, 75);
+      const valLines = pdf.splitTextToSize(val, cardW - 14);
+      pdf.text(valLines.slice(0, 3), cardX + 6, y + 5);
+      y += Math.max(14, valLines.slice(0, 3).length * 5 + 8);
     };
 
-    if (m.modalitesSite) addGroup('SITE', m.modalitesSite);
-    if (m.modalitesInstallation) addGroup('INSTALLATION', m.modalitesInstallation === 'neuf' ? 'Neuf' : 'Rénovation');
-    if (m.modalitesDemontage?.length) addGroup('DÉMONTAGE', m.modalitesDemontage.join(' / '));
-    if (m.modalitesElevation?.length) addGroup('ÉLÉVATION', m.modalitesElevation.join(' / '));
-    if (m.modalitesEspace?.length) addGroup('ESPACE NÉCESSAIRE', m.modalitesEspace.join(' / '));
-    if (m.modalitesConditions?.length) addGroup('CONDITIONS', m.modalitesConditions.join(' / '));
+    if (m.modalitesSite) safeAddGroup('SITE', m.modalitesSite);
+    if (m.modalitesInstallation) safeAddGroup('INSTALLATION', m.modalitesInstallation === 'neuf' ? 'Neuf' : 'Rénovation');
+    if (m.modalitesDemontage?.length) safeAddGroup('DÉMONTAGE', m.modalitesDemontage.join(' / '));
+    if (m.modalitesElevation?.length) safeAddGroup('ÉLÉVATION', m.modalitesElevation.join(' / '));
+    if (m.modalitesEspace?.length) safeAddGroup('ESPACE NÉCESSAIRE', m.modalitesEspace.join(' / '));
+    if (m.modalitesConditions?.length) safeAddGroup('CONDITIONS', m.modalitesConditions.join(' / '));
 
-    // Horaires + Permis sur même ligne
-    pdf.setFontSize(8.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 58, 138);
-    pdf.text('CONTRAINTES HORAIRES :', 15, y);
-    pdf.text('PERMIS REQUIS :', 110, y);
-    pdf.setFont('helvetica', 'normal'); pdf.setTextColor(50, 55, 65);
+    if (y + 14 > 278) { y = ensureSpace(pdf, y, 100, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP'); y += 4; }
+    pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 58, 138);
+    pdf.text('CONTRAINTES HORAIRES :', cardX + 6, y);
+    pdf.text('PERMIS REQUIS :', 105, y);
+    pdf.setFont('helvetica', 'normal'); pdf.setTextColor(50, 58, 75);
     const hor = `Ouverture ${m.modalitesHeureOuverture || '-'} — Fermeture ${m.modalitesHeureFermeture || '-'}`;
     const perm = m.modalitesPermis?.length ? m.modalitesPermis.join(' / ') : 'Aucun';
-    pdf.text(hor, 15, y + 5); pdf.text(perm, 110, y + 5);
+    pdf.text(hor, cardX + 6, y + 5); pdf.text(perm, 105, y + 5);
     y += 14;
 
-    if (m.modalitesStationnement?.length) addGroup('STATIONNEMENT', m.modalitesStationnement.join(' / '));
-    if (m.modalitesRisques) addGroup('RISQUES IDENTIFIÉS', m.modalitesRisques);
+    if (m.modalitesStationnement?.length) safeAddGroup('STATIONNEMENT', m.modalitesStationnement.join(' / '));
+    if (m.modalitesRisques) safeAddGroup('RISQUES IDENTIFIÉS', m.modalitesRisques);
 
     if (m.modalitesSignatureCharge) {
-      y = ensureSpace(pdf, y, 40, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP');
+      if (y + 36 > 278) { y = ensureSpace(pdf, y, 100, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP'); y += 4; }
+      pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(80, 90, 110);
+      pdf.text("SIGNATURE CHARGÉ D'AFFAIRE :", cardX + 6, y);
       y += 4;
-      pdf.setFontSize(8.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(80, 80, 80);
-      pdf.text("SIGNATURE CHARGÉ D'AFFAIRE :", 15, y);
-      y += 4;
-      pdf.addImage(m.modalitesSignatureCharge, 'PNG', 15, y, 75, 22);
-      y += 28;
+      pdf.addImage(m.modalitesSignatureCharge, 'PNG', cardX + 6, y, 70, 20);
+      y += 26;
     }
   }
 
@@ -514,69 +611,59 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
   y = ensureSpace(pdf, y, 70, logo, masc, store, 'DEVIS SNIMOP');
   y += 6;
 
-  // Entête section
-  pdf.setFontSize(11);
+  // Titre section CONDITIONS
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(30, 58, 138);
   pdf.text('CONDITIONS FINANCIÈRES', 15, y);
   pdf.setDrawColor(30, 58, 138);
   pdf.setLineWidth(0.4);
-  pdf.line(15, y + 3, 195, y + 3);
+  pdf.line(15, y + 2.5, 195, y + 2.5);
   y += 10;
 
-  // Fond dégradé simulé (rectangle blanc avec bordure bleue)
-  pdf.setFillColor(248, 250, 255);
-  pdf.setDrawColor(200, 210, 240);
+  // Ombre douce
+  pdf.setFillColor(200, 208, 228);
+  pdf.roundedRect(16.5, y + 1.5, 180, 58, 3, 3, 'F');
+  // Carte
+  pdf.setFillColor(248, 251, 255);
+  pdf.setDrawColor(195, 210, 240);
   pdf.setLineWidth(0.3);
-  pdf.roundedRect(15, y, 180, 52, 2, 2, 'FD');
+  pdf.roundedRect(15, y, 180, 58, 3, 3, 'FD');
 
-  // Ligne HT
-  pdf.setFontSize(10.5);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(70, 70, 100);
-  pdf.text('Prix HT :', 22, y + 13);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(30, 30, 30);
+  // HT
+  pdf.setFontSize(9.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(90, 95, 120);
+  pdf.text('Montant HT :', 22, y + 13);
+  pdf.setFont('helvetica', 'normal'); pdf.setTextColor(40, 45, 60);
   pdf.text(`${baseHT.toFixed(2)} €`, 80, y + 13);
 
-  // Ligne TVA
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(70, 70, 100);
-  pdf.text(`TVA (${store.tvaPourcentage || 20}%) :`, 22, y + 25);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(30, 30, 30);
-  pdf.text(`${tva.toFixed(2)} €`, 80, y + 25);
+  // TVA
+  pdf.setFont('helvetica', 'bold'); pdf.setTextColor(90, 95, 120);
+  pdf.text(`TVA (${store.tvaPourcentage || 20}%) :`, 22, y + 24);
+  pdf.setFont('helvetica', 'normal'); pdf.setTextColor(40, 45, 60);
+  pdf.text(`${tva.toFixed(2)} €`, 80, y + 24);
 
-  // Séparateur avant TTC
-  pdf.setDrawColor(200, 210, 240);
-  pdf.setLineWidth(0.3);
-  pdf.line(22, y + 30, 193, y + 30);
+  // Trait séparateur
+  pdf.setDrawColor(195, 210, 240); pdf.setLineWidth(0.4);
+  pdf.line(22, y + 30, 192, y + 30);
 
-  // TTC en grand
+  // TTC bandeau premium
   pdf.setFillColor(30, 58, 138);
-  pdf.roundedRect(110, y + 32, 83, 16, 2, 2, 'F');
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(255, 255, 255);
-  pdf.text('TOTAL TTC :', 115, y + 42);
-  pdf.setFontSize(13);
-  pdf.text(`${ttc.toFixed(2)} €`, 190, y + 42, { align: 'right' });
+  pdf.roundedRect(15, y + 33, 180, 22, 2, 2, 'F');
+  pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(255, 255, 255);
+  pdf.text('TOTAL TTC :', 24, y + 47);
+  pdf.setFontSize(14);
+  pdf.text(`${ttc.toFixed(2)} €`, 192, y + 47, { align: 'right' });
 
-  // TTC à gauche (texte secondaire)
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(30, 58, 138);
-  pdf.text(`TOTAL TTC : ${ttc.toFixed(2)} €`, 22, y + 42);
+  y += 62;
 
-  // Acompte
+  // Acompte discret
   if (store.acompteDemande) {
     const acompte = ttc * ((store.acomptePourcentage || 30) / 100);
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(80, 100, 180);
-    pdf.text(`Acompte demandé (${store.acomptePourcentage}%) : ${acompte.toFixed(2)} €`, 22, y + 60);
+    pdf.setFontSize(8.5); pdf.setTextColor(70, 100, 180); pdf.setFont('helvetica', 'normal');
+    pdf.text(`Acompte demandé (${store.acomptePourcentage}%) : ${acompte.toFixed(2)} €`, 22, y);
+    y += 8;
   }
-  y += 66;
+  y += 4;
 
   // Signature devis
   const sig = store.stepSignatures?.['devis'];
