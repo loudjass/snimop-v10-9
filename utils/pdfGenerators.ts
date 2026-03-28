@@ -98,7 +98,7 @@ export const drawPageHeader = (
       const mw = 120;
       const mh = mw / mascotteData.ratio;
       pdf.saveGraphicsState();
-      pdf.setGState(new (pdf as any).GState({ opacity: 0.07 }));
+      pdf.setGState(new (pdf as any).GState({ opacity: 0.085 }));
       pdf.addImage(mascotteData.img, 'PNG', (210 - mw) / 2, (297 - mh) / 2 + 10, mw, mh);
       pdf.restoreGraphicsState();
     } catch (_) {}
@@ -127,14 +127,14 @@ const addSection = (
   pdf.setDrawColor(215, 222, 236);
   pdf.setLineWidth(0.2);
   pdf.line(xPos, y + 1.5, xPos + maxWidth, y + 1.5);
-  y += 7;
+  y += 6;
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   const lines = pdf.splitTextToSize(text, maxWidth);
   // Small padding for long texts
-  pdf.text(lines, xPos, y + (lines.length > 2 ? 1 : 0));
-  return y + lines.length * 6 + 12; // increased bottom spacing
+  pdf.text(lines, xPos, y + (lines.length > 2 ? 0.5 : 0));
+  return y + lines.length * 5.5 + 7.5; 
 };
 
 // ─────────────────────────────────────────────
@@ -157,7 +157,7 @@ const ensureSpace = (
 };
 
 // ─────────────────────────────────────────────
-// BLOC PHOTOS (jusqu'à 4 photos, 2 par rangée)
+// BLOC PHOTOS (jusqu'à 4 photos par page)
 // ─────────────────────────────────────────────
 const drawPhotos = async (
   pdf: jsPDF,
@@ -172,13 +172,12 @@ const drawPhotos = async (
   const filtered = photos.filter(p => types.includes(p.type)).slice(0, 4);
   if (filtered.length === 0) return;
 
-  // ─ Carte unifiée : un seul bloc image+info ─
   const PHOTO_W = 84;
-  const CARD_H  = 87;   // hauteur totale de la carte
-  const IMG_H   = 62;   // zone image (+images plus grandes)
-  const GAP     = 8;
+  const CARD_H  = 80;
+  const IMG_H   = 54;
+  const GAP_X   = 8;
+  const GAP_Y   = 8;
   const MX      = 15;
-  const BLOCK_H = CARD_H + 4;
 
   const getLabel = (type: string) => {
     switch (type) {
@@ -190,53 +189,56 @@ const drawPhotos = async (
     }
   };
 
-  for (let row = 0; row < Math.ceil(filtered.length / 2); row++) {
-    const rowPhotos = filtered.slice(row * 2, row * 2 + 2);
-    const needed = BLOCK_H + (row === 0 ? 18 : 4);
-    yRef.y = ensureSpace(pdf, yRef.y, needed, logoData, mascotteData, store, sectionTitle);
+  const totalRows = Math.ceil(filtered.length / 2);
+  const titleH = 14;
+  const neededForBlock = titleH + totalRows * (CARD_H + GAP_Y);
 
-    if (row === 0) {
-      yRef.y += 6;
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(80, 95, 115);
-      pdf.text('PHOTOS ET ILLUSTRATIONS :', MX, yRef.y);
-      pdf.setDrawColor(210, 215, 225);
-      pdf.setLineWidth(0.2);
-      pdf.line(MX, yRef.y + 2, 195, yRef.y + 2);
-      yRef.y += 10;
-    }
+  if (yRef.y + neededForBlock > 272) {
+    pdf.addPage();
+    yRef.y = drawPageHeader(pdf, logoData, mascotteData, store, sectionTitle);
+  }
+
+  yRef.y += 4;
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(80, 95, 115);
+  pdf.text('PHOTOS ET ILLUSTRATIONS :', MX, yRef.y);
+  pdf.setDrawColor(210, 215, 225);
+  pdf.setLineWidth(0.2);
+  pdf.line(MX, yRef.y + 2, 195, yRef.y + 2);
+  yRef.y += 8;
+
+  for (let row = 0; row < totalRows; row++) {
+    const rowPhotos = filtered.slice(row * 2, row * 2 + 2);
 
     for (let col = 0; col < rowPhotos.length; col++) {
       const photo = rowPhotos[col];
       const pd = await loadPhotoBase64(photo.imageBase64);
       if (!pd) continue;
-      const cx = MX + col * (PHOTO_W + GAP);
+      
+      const cx = MX + col * (PHOTO_W + GAP_X);
       const cy = yRef.y;
 
       // Ombre douce
-      pdf.setFillColor(205, 210, 222);
-      pdf.roundedRect(cx + 1.5, cy + 1.5, PHOTO_W, CARD_H, 2, 2, 'F');
+      pdf.setFillColor(200, 208, 228);
+      pdf.roundedRect(cx + 1.5, cy + 1.5, PHOTO_W, CARD_H, 3, 3, 'F');
 
-      // Carte complète (image + zone info)
+      // Carte
       pdf.setFillColor(252, 253, 255);
-      pdf.setDrawColor(213, 218, 228);
-      pdf.setLineWidth(0.2);
-      pdf.roundedRect(cx, cy, PHOTO_W, CARD_H, 2, 2, 'FD');
+      pdf.setDrawColor(195, 210, 240);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(cx, cy, PHOTO_W, CARD_H, 3, 3, 'FD');
 
-      // Image centrée dans la zone image
       const pad = 3;
       let dw = PHOTO_W - pad * 2;
       let dh = dw / pd.ratio;
       if (dh > IMG_H - pad * 2) { dh = IMG_H - pad * 2; dw = dh * pd.ratio; }
       pdf.addImage(pd.img, 'JPEG', cx + (PHOTO_W - dw) / 2, cy + (IMG_H - dh) / 2, dw, dh);
 
-      // Séparateur fin bleu entre image et zone info
       pdf.setDrawColor(30, 58, 138);
       pdf.setLineWidth(0.4);
       pdf.line(cx + 3, cy + IMG_H, cx + PHOTO_W - 3, cy + IMG_H);
 
-      // Badge label type
       const labelText = getLabel(photo.type);
       pdf.setFontSize(6.5);
       pdf.setFont('helvetica', 'bold');
@@ -246,17 +248,16 @@ const drawPhotos = async (
       pdf.roundedRect(cx + 3, cy + IMG_H + 2.5, lblW, 6.5, 1, 1, 'F');
       pdf.text(labelText, cx + 6, cy + IMG_H + 7.5);
 
-      // Description
       const desc = (photo.title || '').trim();
       if (desc) {
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(55, 65, 81);
         const dlines = pdf.splitTextToSize(desc, PHOTO_W - 8).slice(0, 2);
-        pdf.text(dlines, cx + 4, cy + IMG_H + 17);
+        pdf.text(dlines, cx + 4, cy + IMG_H + 16);
       }
     }
-    yRef.y += BLOCK_H + 8;
+    yRef.y += CARD_H + GAP_Y;
   }
 };
 
@@ -292,7 +293,7 @@ const drawSignatureBlock = (
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(255, 255, 255);
   pdf.text(`VISA — ${title.toUpperCase()}`, 105, y + 8, { align: 'center' });
-  y += 16;
+  y += 20;
 
   const drawOneSig = (label: string, nom: string, sigB64: string, x: number) => {
     pdf.setFontSize(9.5);
@@ -304,19 +305,19 @@ const drawSignatureBlock = (
     pdf.setTextColor(30, 40, 60);
     pdf.text(nom || 'Non renseigné', x + pdf.getTextWidth(`${label} :`) + 2, y);
 
-    const sigY = y + 6;
+    const sigY = y + 8;
     if (sigB64 && sigB64.startsWith('data:image')) {
       pdf.setFillColor(255, 255, 255);
       pdf.setDrawColor(210, 220, 235);
       pdf.setLineWidth(0.2);
-      pdf.roundedRect(x, sigY, 84, 28, 2, 2, 'FD');
-      pdf.addImage(sigB64, 'PNG', x + 1, sigY + 1, 82, 26);
+      pdf.roundedRect(x, sigY, 84, 30, 2, 2, 'FD');
+      pdf.addImage(sigB64, 'PNG', x + 1, sigY + 1, 82, 28);
     } else {
       pdf.setFillColor(250, 250, 255);
       pdf.setDrawColor(210, 220, 235);
       pdf.setLineWidth(0.2);
       pdf.setLineDashPattern([2, 2], 0);
-      pdf.roundedRect(x, sigY, 84, 28, 2, 2, 'FD');
+      pdf.roundedRect(x, sigY, 84, 30, 2, 2, 'FD');
       pdf.setLineDashPattern([], 0);
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'italic');
@@ -613,10 +614,12 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
 
   // CARTE VALEUR AJOUTÉE SNIMOP
   y = ensureSpace(pdf, y, 40, logo, masc, store, 'DEVIS SNIMOP');
+  pdf.setFillColor(200, 208, 228);
+  pdf.roundedRect(16.5, y + 1.5, 180, 26, 3, 3, 'F');
   pdf.setFillColor(248, 251, 255);
-  pdf.setDrawColor(215, 222, 236);
+  pdf.setDrawColor(195, 210, 240);
   pdf.setLineWidth(0.3);
-  pdf.roundedRect(15, y, 180, 26, 2, 2, 'FD');
+  pdf.roundedRect(15, y, 180, 26, 3, 3, 'FD');
   pdf.setFontSize(8.5);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(30, 58, 138);

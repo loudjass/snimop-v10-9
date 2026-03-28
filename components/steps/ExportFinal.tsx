@@ -181,7 +181,7 @@ export function ExportFinal() {
           const markY = 297 - markHeight - 20; // Bottom 
           
           pdf.saveGraphicsState();
-          pdf.setGState(new (pdf as any).GState({ opacity: 0.07 }));
+          pdf.setGState(new (pdf as any).GState({ opacity: 0.085 }));
           pdf.addImage(mascotteData.img, 'PNG', markX, markY, markWidth, markHeight);
           pdf.restoreGraphicsState();
         } catch(e) { console.error("Watermark error", e); }
@@ -246,7 +246,7 @@ export function ExportFinal() {
             const markY = (297 - markHeight) / 2 + 10;
             
             pageContextPdf.saveGraphicsState();
-            pageContextPdf.setGState(new (pageContextPdf as any).GState({ opacity: 0.07 }));
+            pageContextPdf.setGState(new (pageContextPdf as any).GState({ opacity: 0.085 }));
             pageContextPdf.addImage(mascotteData.img, 'PNG', markX, markY, markWidth, markHeight);
             pageContextPdf.restoreGraphicsState();
           } catch(e) {}
@@ -271,15 +271,15 @@ export function ExportFinal() {
         pdf.setDrawColor(215, 222, 236);
         pdf.setLineWidth(0.2);
         pdf.line(xPos, y + 1.5, xPos + (halfWidth ? 85 : 180), y + 1.5);
-        y += 7;
+        y += 6;
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(55, 65, 81);
         const ObjectifWidth = halfWidth ? 85 : 180;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
         // Small padding for long texts
-        pdf.text(lines, xPos, y + (lines.length > 2 ? 1 : 0));
-        return y + (lines.length * 6) + 12; // increased bottom spacing
+        pdf.text(lines, xPos, y + (lines.length > 2 ? 0.5 : 0));
+        return y + (lines.length * 5.5) + 7.5; 
       };
 
       const addSectionAt = (title: string, content: string | number | undefined, xPos: number, startY: number, halfWidth: boolean = false) => {
@@ -293,14 +293,14 @@ export function ExportFinal() {
         pdf.setDrawColor(215, 222, 236);
         pdf.setLineWidth(0.2);
         pdf.line(xPos, localY + 1.5, xPos + (halfWidth ? 85 : 180), localY + 1.5);
-        localY += 7;
+        localY += 6;
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(55, 65, 81);
         const ObjectifWidth = halfWidth ? 85 : 180;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
-        pdf.text(lines, xPos, localY + (lines.length > 2 ? 1 : 0));
-        return localY + (lines.length * 6) + 12;
+        pdf.text(lines, xPos, localY + (lines.length > 2 ? 0.5 : 0));
+        return localY + (lines.length * 5.5) + 7.5;
       };
 
       // HELPER POUR LES PHOTOS PAR SECTION (PREMIUM)
@@ -308,13 +308,33 @@ export function ExportFinal() {
         const filtered = store.photos.filter(p => types.includes(p.type)).slice(0, 4);
         if (filtered.length === 0) return;
 
-        // Dimensions photo et descriptif
         const PHOTO_W = 84;
-        const PHOTO_H = 60;
-        const DESC_H  = 28;
-        const GAP     = 8;   // Entre les 2 colonnes
+        const CARD_H  = 80;
+        const IMG_H   = 54;
+        const GAP_X   = 8;
+        const GAP_Y   = 8;
         const MARGIN_X = 15;
-        const BLOCK_H  = PHOTO_H + DESC_H + 6; // Hauteur totale d'une rangée
+        
+        const totalRows = Math.ceil(filtered.length / 2);
+        const titleH = 14;
+        const neededForBlock = titleH + totalRows * (CARD_H + GAP_Y);
+
+        // Si tout le bloc ne rentre pas sur la page courante, on saute de page
+        if (y + neededForBlock > 272) {
+          pdf.addPage();
+          y = drawHeader(pdf, sectionLabel || "DOCUMENTS & PHOTOS");
+        }
+
+        // Titre de section
+        y += 4;
+        pdf.setFontSize(9.5);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(80, 80, 80);
+        pdf.text("PHOTOS ET ILLUSTRATIONS :", MARGIN_X, y);
+        pdf.setDrawColor(210, 210, 210);
+        pdf.setLineWidth(0.2);
+        pdf.line(MARGIN_X, y + 2, 195, y + 2);
+        y += 8;
 
         // MAP TYPE TO LABEL
         const getPhotoLabel = (type: string) => {
@@ -327,53 +347,28 @@ export function ExportFinal() {
           }
         };
 
-        // On traite les photos par rangées de 2
-        for (let row = 0; row < Math.ceil(filtered.length / 2); row++) {
+        for (let row = 0; row < totalRows; row++) {
           const rowPhotos = filtered.slice(row * 2, row * 2 + 2);
 
-          // Créer une nouvelle page si pas assez d'espace
-          const spaceNeeded = BLOCK_H + (row === 0 ? 18 : 4); // Inclure titre section si 1ère rangée
-          if (y + spaceNeeded > 272) {
-            pdf.addPage();
-            y = drawHeader(pdf, sectionLabel || "DOCUMENTS & PHOTOS");
-          }
-
-          // Titre de section (uniquement pour la 1ère rangée)
-          if (row === 0) {
-            y += 6;
-            pdf.setFontSize(9.5);
-            pdf.setFont("helvetica", "bold");
-            pdf.setTextColor(80, 80, 80);
-            pdf.text("PHOTOS ET ILLUSTRATIONS :", MARGIN_X, y);
-            // Ligne fine sous le titre
-            pdf.setDrawColor(210, 210, 210);
-            pdf.setLineWidth(0.2);
-            pdf.line(MARGIN_X, y + 2, 195, y + 2);
-            y += 10;
-          }
-
-          // Dessiner chaque photo de la rangée
           for (let col = 0; col < rowPhotos.length; col++) {
             const photo = rowPhotos[col];
             const photoData = await loadPhotoBase64(photo.imageBase64);
             if (!photoData) continue;
 
-            const containerX = MARGIN_X + col * (PHOTO_W + GAP);
+            const containerX = MARGIN_X + col * (PHOTO_W + GAP_X);
             const containerY = y;
-            const CARD_H = 87;
-            const IMG_H  = 62;
 
             // Ombre douce
-            pdf.setFillColor(205, 210, 222);
-            pdf.roundedRect(containerX + 1.5, containerY + 1.5, PHOTO_W, CARD_H, 2, 2, 'F');
+            pdf.setFillColor(200, 208, 228);
+            pdf.roundedRect(containerX + 1.5, containerY + 1.5, PHOTO_W, CARD_H, 3, 3, 'F');
 
-            // Carte complète (image + zone info)
+            // Carte
             pdf.setFillColor(252, 253, 255);
-            pdf.setDrawColor(213, 218, 228);
-            pdf.setLineWidth(0.2);
-            pdf.roundedRect(containerX, containerY, PHOTO_W, CARD_H, 2, 2, 'FD');
+            pdf.setDrawColor(195, 210, 240);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(containerX, containerY, PHOTO_W, CARD_H, 3, 3, 'FD');
 
-            // Image centrée dans la zone image
+            // Image centrée
             const padding = 3;
             let drawWidth  = PHOTO_W - padding * 2;
             let drawHeight = drawWidth / photoData.ratio;
@@ -407,12 +402,10 @@ export function ExportFinal() {
               pdf.setFont("helvetica", "normal");
               pdf.setTextColor(55, 65, 81);
               const descLines = pdf.splitTextToSize(desc, PHOTO_W - 8).slice(0, 2);
-              pdf.text(descLines, containerX + 4, containerY + IMG_H + 17);
+              pdf.text(descLines, containerX + 4, containerY + IMG_H + 16);
             }
           }
-
-          // Avancer Y après la rangée
-          y += BLOCK_H + 10;
+          y += CARD_H + GAP_Y;
         }
       };
 
@@ -566,10 +559,12 @@ export function ExportFinal() {
       
       // CARTE VALEUR AJOUTÉE SNIMOP
       if (y + 35 > 260) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
+      pdf.setFillColor(200, 208, 228);
+      pdf.roundedRect(16.5, y + 1.5, 180, 26, 3, 3, 'F');
       pdf.setFillColor(248, 251, 255);
-      pdf.setDrawColor(215, 222, 236);
+      pdf.setDrawColor(195, 210, 240);
       pdf.setLineWidth(0.3);
-      pdf.roundedRect(15, y, 180, 26, 2, 2, 'FD');
+      pdf.roundedRect(15, y, 180, 26, 3, 3, 'FD');
       pdf.setFontSize(8.5);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(30, 58, 138);
@@ -700,34 +695,34 @@ export function ExportFinal() {
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(255, 255, 255);
-      pdf.text("SIGNATURE CLIENT", 105, y + 8, { align: 'center' });
-      y += 16;
+      pdf.text("VALIDATION ET SIGNATURE CLIENT", 105, y + 8, { align: 'center' });
+      y += 20;
 
       // Signataire
       pdf.setFontSize(9.5);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(60, 75, 100);
-      pdf.text("Nom du signataire :", 22, y);
+      pdf.text("Signataire :", 22, y);
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(30, 40, 60);
       const signataire = store.nomSignataireClient || store.contact || store.client || '';
-      pdf.text(signataire || 'Non renseigné', 70, y);
+      pdf.text(signataire || 'Non renseigné', 46, y);
 
       // Zone signature
-      y += 6;
+      y += 8;
       if (store.signatureClient && store.signatureClient.startsWith('data:image')) {
         // Léger fond blanc derrière la signature
         pdf.setFillColor(255, 255, 255);
         pdf.setDrawColor(210, 220, 235);
         pdf.setLineWidth(0.2);
-        pdf.roundedRect(22, y, 84, 28, 2, 2, 'FD');
-        pdf.addImage(store.signatureClient, 'PNG', 23, y + 1, 82, 26);
+        pdf.roundedRect(22, y, 84, 30, 2, 2, 'FD');
+        pdf.addImage(store.signatureClient, 'PNG', 23, y + 1, 82, 28);
       } else {
         pdf.setFillColor(250, 250, 255);
         pdf.setDrawColor(210, 220, 235);
         pdf.setLineWidth(0.2);
         pdf.setLineDashPattern([2, 2], 0);
-        pdf.roundedRect(22, y, 84, 28, 2, 2, 'FD');
+        pdf.roundedRect(22, y, 84, 30, 2, 2, 'FD');
         pdf.setLineDashPattern([], 0);
         pdf.setFontSize(8);
         pdf.setFont("helvetica", "italic");
@@ -740,19 +735,19 @@ export function ExportFinal() {
       if (store.bonPourAccord) {
         // Carte verte BPA
         pdf.setFillColor(22, 101, 52); // vert foncé
-        pdf.roundedRect(112, y, 80, 28, 2, 2, 'F');
+        pdf.roundedRect(114, y, 76, 30, 2, 2, 'F');
         // Badge LU ET APPROUVÉ
         pdf.setFillColor(255, 255, 255);
-        pdf.roundedRect(132, y + 3, 40, 6, 1, 1, 'F');
+        pdf.roundedRect(132, y + 5, 40, 6, 1, 1, 'F');
         pdf.setFontSize(7);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(22, 101, 52);
-        pdf.text("LU ET APPROUVÉ", 152, y + 7.5, { align: 'center' });
+        pdf.text("LU ET APPROUVÉ", 152, y + 9.5, { align: 'center' });
         // Text BPA
         pdf.setFontSize(9.5);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(255, 255, 255);
-        pdf.text("BON POUR ACCORD", 152, y + 15, { align: 'center' });
+        pdf.text("BON POUR ACCORD", 152, y + 17, { align: 'center' });
         // Date/heure automatique
         pdf.setFontSize(7);
         pdf.setFont("helvetica", "normal");
@@ -760,7 +755,7 @@ export function ExportFinal() {
         const signedAt = store.stepSignatures?.['devis']?.dateSignature 
            ? format(new Date(store.stepSignatures['devis'].dateSignature), "dd/MM/yyyy à HH:mm", { locale: fr })
            : format(new Date(), "dd/MM/yyyy à HH:mm", { locale: fr });
-        pdf.text(`Signé le ${signedAt}`, 152, y + 23, { align: 'center' });
+        pdf.text(`Signé le ${signedAt}`, 152, y + 25, { align: 'center' });
       }
 
       // ─ Pagination
