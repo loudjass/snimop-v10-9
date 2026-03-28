@@ -271,7 +271,7 @@ export function ExportFinal() {
         pdf.setDrawColor(215, 222, 236);
         pdf.setLineWidth(0.2);
         pdf.line(xPos, y + 1.5, xPos + (halfWidth ? 85 : 180), y + 1.5);
-        y += 6;
+        y += 5.5;
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(55, 65, 81);
@@ -279,7 +279,7 @@ export function ExportFinal() {
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
         // Small padding for long texts
         pdf.text(lines, xPos, y + (lines.length > 2 ? 0.5 : 0));
-        return y + (lines.length * 5.5) + 7.5; 
+        return y + (lines.length * 5) + 6; 
       };
 
       const addSectionAt = (title: string, content: string | number | undefined, xPos: number, startY: number, halfWidth: boolean = false) => {
@@ -293,14 +293,14 @@ export function ExportFinal() {
         pdf.setDrawColor(215, 222, 236);
         pdf.setLineWidth(0.2);
         pdf.line(xPos, localY + 1.5, xPos + (halfWidth ? 85 : 180), localY + 1.5);
-        localY += 6;
+        localY += 5.5;
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(55, 65, 81);
         const ObjectifWidth = halfWidth ? 85 : 180;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
         pdf.text(lines, xPos, localY + (lines.length > 2 ? 0.5 : 0));
-        return localY + (lines.length * 5.5) + 7.5;
+        return localY + (lines.length * 5) + 6;
       };
 
       // HELPER POUR LES PHOTOS PAR SECTION (PREMIUM)
@@ -323,6 +323,11 @@ export function ExportFinal() {
         if (y + neededForBlock > 272) {
           pdf.addPage();
           y = drawHeader(pdf, sectionLabel || "DOCUMENTS & PHOTOS");
+        }
+
+        const remainingSpace = 272 - y;
+        if (remainingSpace > neededForBlock + 30) {
+          y += (remainingSpace - neededForBlock) / 2;
         }
 
         // Titre de section
@@ -470,6 +475,20 @@ export function ExportFinal() {
         pdf.setDrawColor(195, 210, 240);
         pdf.setLineWidth(0.3);
         pdf.roundedRect(cardX, y, cardW, safeCardH, 3, 3, 'FD');
+
+        // Filigrane Mascotte interne (très léger)
+        if (mascotteData && mascotteData.img) {
+          try {
+            const mWidth = 70;
+            const mHeight = mWidth / mascotteData.ratio;
+            const mX = cardX + (cardW - mWidth) / 2;
+            const mY = y + (safeCardH - mHeight) / 2;
+            pdf.saveGraphicsState();
+            pdf.setGState(new (pdf as any).GState({ opacity: 0.03 }));
+            pdf.addImage(mascotteData.img, 'PNG', mX, mY, mWidth, mHeight);
+            pdf.restoreGraphicsState();
+          } catch(e) {}
+        }
 
         // Entête section
         pdf.setFillColor(30, 58, 138);

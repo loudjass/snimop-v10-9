@@ -127,14 +127,14 @@ const addSection = (
   pdf.setDrawColor(215, 222, 236);
   pdf.setLineWidth(0.2);
   pdf.line(xPos, y + 1.5, xPos + maxWidth, y + 1.5);
-  y += 6;
+  y += 5.5;
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   const lines = pdf.splitTextToSize(text, maxWidth);
   // Small padding for long texts
   pdf.text(lines, xPos, y + (lines.length > 2 ? 0.5 : 0));
-  return y + lines.length * 5.5 + 7.5; 
+  return y + lines.length * 5 + 6; 
 };
 
 // ─────────────────────────────────────────────
@@ -196,6 +196,11 @@ const drawPhotos = async (
   if (yRef.y + neededForBlock > 272) {
     pdf.addPage();
     yRef.y = drawPageHeader(pdf, logoData, mascotteData, store, sectionTitle);
+  }
+
+  const remainingSpace = 272 - yRef.y;
+  if (remainingSpace > neededForBlock + 30) {
+    yRef.y += (remainingSpace - neededForBlock) / 2;
   }
 
   yRef.y += 4;
@@ -512,6 +517,20 @@ export const generateVisitePdf = async (store: DossierData): Promise<Blob> => {
     pdf.setDrawColor(195, 210, 240);
     pdf.setLineWidth(0.3);
     pdf.roundedRect(cardX, y, cardW, safeCardH, 3, 3, 'FD');
+
+    // Filigrane Mascotte interne (très léger)
+    if (masc && masc.img) {
+      try {
+        const mWidth = 70;
+        const mHeight = mWidth / masc.ratio;
+        const mX = cardX + (cardW - mWidth) / 2;
+        const mY = y + (safeCardH - mHeight) / 2;
+        pdf.saveGraphicsState();
+        pdf.setGState(new (pdf as any).GState({ opacity: 0.03 }));
+        pdf.addImage(masc.img, 'PNG', mX, mY, mWidth, mHeight);
+        pdf.restoreGraphicsState();
+      } catch(e) {}
+    }
 
     pdf.setFillColor(30, 58, 138);
     pdf.roundedRect(cardX, y, cardW, 10, 3, 3, 'F');
