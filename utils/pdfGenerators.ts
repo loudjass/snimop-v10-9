@@ -782,7 +782,15 @@ export const generateBonPdf = async (store: DossierData): Promise<Blob> => {
 
   let y = drawPageHeader(pdf, logo, masc, store, "BON D'INTERVENTION SNIMOP");
 
-  y = addSection(pdf, "Date d'intervention prévue", store.dateIntervention ? safeDateLong(store.dateIntervention) : '', y);
+  const hasHoraires = store.heureDebut || store.heureFin;
+  let dateText = store.dateIntervention ? safeDateLong(store.dateIntervention) : 'Non renseignée';
+  if (hasHoraires) {
+    if (store.heureDebut && store.heureFin) dateText += ` de ${store.heureDebut} à ${store.heureFin}`;
+    else if (store.heureDebut) dateText += ` à partir de ${store.heureDebut}`;
+    else if (store.heureFin) dateText += ` jusqu'à ${store.heureFin}`;
+  }
+
+  y = addSection(pdf, "Date d'intervention prévue", dateText, y);
   y = addSection(pdf, 'SOLUTION PROPOSÉE', store.natureTravaux, y);
   y = addSection(pdf, 'MATÉRIEL FOURNI', store.materielPrevu, y);
   y = addSection(pdf, 'Consignes / Remarques', store.consignes, y);
@@ -816,8 +824,12 @@ export const generateRapportPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'Travaux réalisés', store.travauxRealises, y);
   y = addSection(pdf, 'Matériel utilisé', store.materielUtilise, y);
 
-  const tempsPasse = store.tempsPasse ? `${store.tempsPasse} heures` : '';
-  const yL = addSection(pdf, 'Temps passé', tempsPasse, y, 14, 85);
+  const tempsPasseStr = store.tempsPasse ? `${store.tempsPasse} heures` : '';
+  let horaireStr = '';
+  if (store.heureDebut && store.heureFin) horaireStr = `${store.heureDebut} - ${store.heureFin}`;
+  else if (store.heureDebut) horaireStr = `À partir de ${store.heureDebut}`;
+
+  const yL = addSection(pdf, 'Horaires et Durée', horaireStr ? `${horaireStr}${tempsPasseStr ? ' (' + tempsPasseStr + ')' : ''}` : tempsPasseStr, y, 14, 85);
   const yR = addSection(pdf, 'Anomalies constatées', store.anomalies, y, 110, 85);
   y = Math.max(yL, yR);
 

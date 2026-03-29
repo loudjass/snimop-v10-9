@@ -567,7 +567,14 @@ export function ExportFinal() {
       // PAGE 5
       pdf.addPage();
       y = drawHeader(pdf, "BON D'INTERVENTION SNIMOP");
-      y = addSection("Date d'intervention prévue", store.dateIntervention);
+      const hasHor = store.heureDebut || store.heureFin;
+      let dTxt = store.dateIntervention ? getSafeDateFormatted(store.dateIntervention) : 'Non renseignée';
+      if (hasHor) {
+        if (store.heureDebut && store.heureFin) dTxt += ` de ${store.heureDebut} à ${store.heureFin}`;
+        else if (store.heureDebut) dTxt += ` à partir de ${store.heureDebut}`;
+        else if (store.heureFin) dTxt += ` jusqu'à ${store.heureFin}`;
+      }
+      y = addSection("Date d'intervention prévue", dTxt);
       y = addSection("SOLUTION PROPOSÉE", store.natureTravaux);
       y = addSection("MATÉRIEL FOURNI", store.materielPrevu);
       y = addSection("Consignes et Remarques", store.consignes);
@@ -579,7 +586,12 @@ export function ExportFinal() {
       y = addSection("Travaux réalisés", store.travauxRealises);
       y = addSection("Matériel utilisé", store.materielUtilise);
       yTopLine = y;
-      yL = addSectionAt("Temps passé", store.tempsPasse ? `${store.tempsPasse} heures` : "", 14, yTopLine, true);
+      const tempsPasseS = store.tempsPasse ? `${store.tempsPasse} heures` : '';
+      let horS = '';
+      if (store.heureDebut && store.heureFin) horS = `${store.heureDebut} - ${store.heureFin}`;
+      else if (store.heureDebut) horS = `À partir de ${store.heureDebut}`;
+
+      yL = addSectionAt("Horaires et Temps passé", horS ? `${horS}${tempsPasseS ? ' (' + tempsPasseS + ')' : ''}` : tempsPasseS, 14, yTopLine, true);
       yR = addSectionAt("Anomalies constatées", store.anomalies, 110, yTopLine, true);
       y = Math.max(yL, yR);
       y = addSection("Réserves", store.rapportReserves);
