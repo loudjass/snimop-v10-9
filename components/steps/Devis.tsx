@@ -304,7 +304,9 @@ export function Devis() {
               const cleanStr = (s?: string | null) => {
                 if (!s) return '';
                 const cl = s.trim().toLowerCase();
-                if (cl.length < 3 || cl === 'gents' || cl === 'test' || cl === 'ok' || cl === 'ras') return '';
+                if (/(.)\1{4,}/.test(cl)) return '';
+                if (cl.length < 3 && !['wc', 'pc', 'bt', 'ht', 'vt'].includes(cl)) return '';
+                if (['gents', 'test', 'ok', 'ras', 'aze', 'qwe'].includes(cl)) return '';
                 return cl;
               };
 

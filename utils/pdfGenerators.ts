@@ -647,21 +647,30 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
   // CARTE VALEUR AJOUTÉE SNIMOP
   y = ensureSpace(pdf, y, 40, logo, masc, store, 'DEVIS SNIMOP');
   pdf.setFillColor(200, 208, 228);
-  pdf.roundedRect(16.5, y + 1.5, 180, 26, 3, 3, 'F');
+  pdf.roundedRect(16.5, y + 1.5, 180, 36, 3, 3, 'F');
   pdf.setFillColor(248, 251, 255);
   pdf.setDrawColor(195, 210, 240);
   pdf.setLineWidth(0.3);
-  pdf.roundedRect(15, y, 180, 26, 3, 3, 'FD');
+  pdf.roundedRect(15, y, 180, 36, 3, 3, 'FD');
   pdf.setFontSize(8.5);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(30, 58, 138);
   pdf.text('VALEUR AJOUTÉE SNIMOP', 20, y + 6);
+
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8.5);
   pdf.setTextColor(60, 70, 85);
-  pdf.text('✓ Réactivité garantie      ✓ Expertise technique confirmée      ✓ Matériel professionnel      ✓ Accompagnement sur-mesure', 20, y + 14);
-  pdf.text('Notre priorité : vous assurer une prestation de qualité, claire et durable.', 20, y + 21);
-  y += 32;
+  pdf.text('•  Réactivité garantie', 20, y + 12);
+  pdf.text('•  Expertise technique confirmée', 20, y + 17);
+  pdf.text('•  Matériel professionnel', 20, y + 22);
+  pdf.text('•  Accompagnement client sur-mesure', 20, y + 27);
+
+  pdf.setFont('helvetica', 'italic');
+  pdf.text('Notre priorité : vous assurer une prestation de qualité, claire et durable.', 20, y + 33);
+  y += 42;
+
+  // Pagination intelligente : Garantir 100 d'espace (Financier + Signature ensemble)
+  y = ensureSpace(pdf, y, 100, logo, masc, store, 'DEVIS SNIMOP');
 
   // ── BLOC FINANCIER PREMIUM ──
   const tauxHoraire = store.tauxHoraireMO || 65;
