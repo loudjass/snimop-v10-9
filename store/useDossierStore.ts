@@ -63,6 +63,7 @@ export interface DossierData {
   coutMaterielHT: number;
   tauxHoraireMO: number;
   heuresMO: number;
+  nombreIntervenants: number;
   coutDeplacementHT: number;
   nacelleActive: boolean;
   coutNacelleHT: number;
@@ -167,6 +168,7 @@ const initialDossierData: Omit<DossierData, 'id' | 'updatedAt' | 'numeroAffaire'
   coutMaterielHT: 0,
   tauxHoraireMO: 65, // Standard rate
   heuresMO: 0,
+  nombreIntervenants: 1,
   coutDeplacementHT: 0,
   nacelleActive: false,
   coutNacelleHT: 0,

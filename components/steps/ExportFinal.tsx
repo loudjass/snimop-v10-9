@@ -463,10 +463,33 @@ export function ExportFinal() {
       y = addSection("SOLUTION PROPOSÉE", store.descriptifTravaux);
       y = addSection("MATÉRIEL FOURNI", store.devisMateriel);
       yTopLine = y;
-      yL = addSectionAt("Main d'œuvre", store.devisMo, 14, yTopLine, true);
-      yR = addSectionAt("Déplacement", store.devisDeplacement, 110, yTopLine, true);
+      // --- CALCULS FINANCIERS DEVIS ---
+      const d_tx = store.tauxHoraireMO || 65;
+      const d_hr = store.heuresMO || 0;
+      const d_int = store.nombreIntervenants || 1;
+      const d_moHT = d_tx * d_hr * d_int;
+      let textMo = store.devisMo || 'Non renseigné';
+      if (d_moHT > 0) {
+        textMo = `${d_moHT.toFixed(2)} € HT`;
+        if (d_int > 1) textMo += `\n(${d_int} intervenants x ${d_hr}h)`;
+      }
+      
+      const d_dep = store.coutDeplacementHT || 0;
+      let textDep = store.devisDeplacement || 'Non renseigné';
+      if (d_dep > 0) textDep = `${d_dep.toFixed(2)} € HT`;
+
+      yL = addSectionAt("Main d'œuvre", textMo, 14, yTopLine, true);
+      yR = addSectionAt("Déplacement", textDep, 110, yTopLine, true);
       y = Math.max(yL, yR);
-      y = addSection("Options (Nacelle, etc.)", store.devisOptions);
+
+      let textOpt = store.devisOptions || '';
+      const d_nac = store.nacelleActive ? (store.coutNacelleHT || 0) : 0;
+      const d_aut = store.autresFraisHT || 0;
+      let linesOpt = textOpt ? [textOpt] : [];
+      if (store.nacelleActive) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${d_nac.toFixed(2)} € HT)`);
+      if (d_aut > 0) linesOpt.push(`AUTRES FRAIS : ${d_aut.toFixed(2)} € HT`);
+      
+      y = addSection("Options / Frais Annexes", linesOpt.length > 0 ? linesOpt.join('\n') : 'Aucun');
       y = addSection("Réserves / Exclusions", store.reserves);
       
       // CARTE VALEUR AJOUTÉE SNIMOP

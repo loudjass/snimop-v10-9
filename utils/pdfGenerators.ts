@@ -647,11 +647,33 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'SOLUTION PROPOSÉE', store.descriptifTravaux, y);
   y = addSection(pdf, 'MATÉRIEL FOURNI', store.devisMateriel, y);
 
-  const yL = addSection(pdf, 'Main d\'œuvre', store.devisMo, y, 14, 85);
-  const yR = addSection(pdf, 'Déplacement', store.devisDeplacement, y, 110, 85);
+  // --- CALCULS FINANCIERS DEVIS ---
+  const d_tx = store.tauxHoraireMO || 65;
+  const d_hr = store.heuresMO || 0;
+  const d_int = store.nombreIntervenants || 1;
+  const d_moHT = d_tx * d_hr * d_int;
+  let textMo = store.devisMo || 'Non renseigné';
+  if (d_moHT > 0) {
+    textMo = `${d_moHT.toFixed(2)} € HT`;
+    if (d_int > 1) textMo += `\n(${d_int} intervenants x ${d_hr}h)`;
+  }
+  
+  const d_dep = store.coutDeplacementHT || 0;
+  let textDep = store.devisDeplacement || 'Non renseigné';
+  if (d_dep > 0) textDep = `${d_dep.toFixed(2)} € HT`;
+
+  const yL = addSection(pdf, 'Main d\'œuvre', textMo, y, 14, 85);
+  const yR = addSection(pdf, 'Déplacement', textDep, y, 110, 85);
   y = Math.max(yL, yR);
 
-  y = addSection(pdf, 'Options (Nacelle, etc.)', store.devisOptions, y);
+  let textOpt = store.devisOptions || '';
+  const d_nac = store.nacelleActive ? (store.coutNacelleHT || 0) : 0;
+  const d_aut = store.autresFraisHT || 0;
+  let linesOpt = textOpt ? [textOpt] : [];
+  if (store.nacelleActive) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${d_nac.toFixed(2)} € HT)`);
+  if (d_aut > 0) linesOpt.push(`AUTRES FRAIS : ${d_aut.toFixed(2)} € HT`);
+  
+  y = addSection(pdf, 'Options / Frais Annexes', linesOpt.length > 0 ? linesOpt.join('\n') : 'Aucun', y);
   y = addSection(pdf, 'Réserves / Exclusions', store.reserves, y);
   y = addSection(pdf, 'Conditions de règlement', store.conditionsReglement, y);
   y = addSection(pdf, 'Délai de réalisation', store.delai, y);

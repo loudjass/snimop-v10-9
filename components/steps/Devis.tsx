@@ -102,6 +102,7 @@ export function Devis() {
   const coutMaterielHT = useDossierStore(s => s.coutMaterielHT) || 0;
   const tauxHoraireMO = useDossierStore(s => s.tauxHoraireMO) || 0;
   const heuresMO = useDossierStore(s => s.heuresMO) || 0;
+  const nombreIntervenants = useDossierStore(s => s.nombreIntervenants) || 1;
   const coutDeplacementHT = useDossierStore(s => s.coutDeplacementHT) || 0;
   const coutNacelleHT = useDossierStore(s => s.coutNacelleHT) || 0;
   const nacelleActive = useDossierStore(s => s.nacelleActive);
@@ -121,7 +122,7 @@ export function Devis() {
 
   // --- CALCULATION LOGIC (MEMOIZED) ---
   const chiffrage = useMemo(() => {
-    const mo = Number(tauxHoraireMO) * Number(heuresMO);
+    const mo = Number(tauxHoraireMO) * Number(heuresMO) * Number(nombreIntervenants);
     const nacelle = (!devisModeRapide && nacelleActive) ? Number(coutNacelleHT) : 0;
     const dep = !devisModeRapide ? Number(coutDeplacementHT) : 0;
     const items = !devisModeRapide ? Number(autresFraisHT) : 0;
@@ -184,7 +185,7 @@ export function Devis() {
       calcMode
     };
   }, [
-    coutMaterielHT, tauxHoraireMO, heuresMO, coutDeplacementHT, coutNacelleHT, 
+    coutMaterielHT, tauxHoraireMO, heuresMO, nombreIntervenants, coutDeplacementHT, coutNacelleHT, 
     nacelleActive, autresFraisHT, margePourcentage, tvaPourcentage, 
     prixFinalManuel, ajustementManuel, devisModeRapide, acompteDemande, acomptePourcentage
   ]);
@@ -393,8 +394,9 @@ export function Devis() {
                 <div className="flex items-center gap-2"><span>👷</span> Main d'œuvre</div>
                 <span className="text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{totalMoHT.toFixed(2)} € HT</span>
               </h4>
-              <div className="grid grid-cols-2 gap-3 mt-1">
-                <Input type="number" step="1" label="TauxHoraire(€)" value={store.tauxHoraireMO || ''} onChange={(e: any) => store.setField('tauxHoraireMO', parseFloat(e.target.value) || 0)} />
+              <div className="grid grid-cols-3 gap-3 mt-1">
+                <Input type="number" step="1" min="1" label="Intervenants" value={store.nombreIntervenants || 1} onChange={(e: any) => store.setField('nombreIntervenants', parseInt(e.target.value) || 1)} />
+                <Input type="number" step="1" label="Taux (€)" value={store.tauxHoraireMO || ''} onChange={(e: any) => store.setField('tauxHoraireMO', parseFloat(e.target.value) || 0)} />
                 <Input type="number" step="0.5" label="Heures" value={store.heuresMO || ''} onChange={(e: any) => store.setField('heuresMO', parseFloat(e.target.value) || 0)} />
               </div>
               
