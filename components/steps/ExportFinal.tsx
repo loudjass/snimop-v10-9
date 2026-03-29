@@ -465,23 +465,29 @@ export function ExportFinal() {
       y = addSection("Réserves / Exclusions", store.reserves);
       
       // CARTE VALEUR AJOUTÉE SNIMOP
-      if (y + 35 > 260) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
+      if (y + 50 > 260) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
       pdf.setFillColor(200, 208, 228);
-      pdf.roundedRect(16.5, y + 1.5, 180, 26, 3, 3, 'F');
+      pdf.roundedRect(16.5, y + 1.5, 180, 38, 3, 3, 'F');
       pdf.setFillColor(248, 251, 255);
       pdf.setDrawColor(195, 210, 240);
       pdf.setLineWidth(0.3);
-      pdf.roundedRect(15, y, 180, 26, 3, 3, 'FD');
+      pdf.roundedRect(15, y, 180, 38, 3, 3, 'FD');
       pdf.setFontSize(8.5);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(30, 58, 138);
       pdf.text("VALEUR AJOUTÉE SNIMOP", 20, y + 6);
+      
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(8.5);
       pdf.setTextColor(60, 70, 85);
-      pdf.text("✓ Réactivité garantie      ✓ Expertise technique confirmée      ✓ Matériel professionnel      ✓ Accompagnement sur-mesure", 20, y + 14);
-      pdf.text("Notre priorité : vous assurer une prestation de qualité, claire et durable.", 20, y + 21);
-      y += 32;
+      pdf.text("•  Réactivité garantie", 20, y + 13);
+      pdf.text("•  Expertise technique confirmée", 20, y + 18);
+      pdf.text("•  Matériel professionnel", 20, y + 23);
+      pdf.text("•  Accompagnement client sur-mesure", 20, y + 28);
+      
+      pdf.setFont("helvetica", "italic");
+      pdf.text("Notre priorité : vous assurer une prestation de qualité, claire et durable.", 20, y + 34);
+      y += 44;
 
       // CONDITIONS FINANCIÈRES (calcul réel)
       if (y > 210) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
@@ -579,6 +585,14 @@ export function ExportFinal() {
       y = addSection("Réserves", store.rapportReserves);
       y = addSection("Observations finales", store.observationsFinales);
 
+      // PHOTOS SUPPLEMENTAIRES
+      if (store.photos && store.photos.length > 0) {
+        const headerWrapper = (p: jsPDF, l: any, m: any, s: any, title: string) => {
+          return drawHeader(p, title);
+        };
+        await renderPaginatedPhotos(pdf, store.photos, null, null, store, headerWrapper);
+      }
+
       // PAGE 7 — VALIDATION FINALE
       pdf.addPage();
       y = drawHeader(pdf, "VALIDATION FINALE");
@@ -661,14 +675,6 @@ export function ExportFinal() {
            ? format(new Date(store.stepSignatures['devis'].dateSignature), "dd/MM/yyyy à HH:mm", { locale: fr })
            : format(new Date(), "dd/MM/yyyy à HH:mm", { locale: fr });
         pdf.text(`Signé le ${signedAt}`, 152, y + 25, { align: 'center' });
-      }
-
-      // PHOTOS SUPPLEMENTAIRES
-      if (store.photos && store.photos.length > 0) {
-        const headerWrapper = (p: jsPDF, l: any, m: any, s: any, title: string) => {
-          return drawHeader(p, title);
-        };
-        await renderPaginatedPhotos(pdf, store.photos, null, null, store, headerWrapper);
       }
 
       // ─ Pagination

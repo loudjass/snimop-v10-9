@@ -301,16 +301,56 @@ export function Devis() {
           <Button 
             variant="outline" 
             onClick={() => {
-              const action = store.interventionType?.toLowerCase() || 'une opération technique';
-              const element = store.equipement?.toLowerCase() || 'votre installation';
-              const mat = store.materielEnvisage || store.devisMateriel ? ` avec fourniture de ${store.materielEnvisage || store.devisMateriel}` : '';
-              const duree = store.heuresMO ? ` (Temps estimé : ${store.heuresMO}h)` : '';
+              const cleanStr = (s?: string | null) => {
+                if (!s) return '';
+                const cl = s.trim().toLowerCase();
+                if (cl.length < 3 || cl === 'gents' || cl === 'test' || cl === 'ok' || cl === 'ras') return '';
+                return cl;
+              };
+
+              const actionRaw = cleanStr(store.interventionType);
+              const elementRaw = cleanStr(store.equipement);
+              const action = actionRaw || 'une intervention technique';
+              const element = elementRaw ? ` sur ${elementRaw}` : '';
               
-              const resumeAuto = `SNIMOP intervient pour ${action} sur ${element}${mat}, incluant la mise en service${duree}.`;
+              let duree = '';
+              if (store.heuresMO && store.heuresMO > 0) {
+                duree = ` Temps estimé : ${store.heuresMO} heure${store.heuresMO > 1 ? 's' : ''}.`;
+              }
+              const resumeAuto = `SNIMOP intervient pour la réalisation de ${action}${element}, avec fourniture du matériel nécessaire et exécution dans les règles de l'art.${duree}`;
               
-              if (!store.resumeIntervention) store.setField('resumeIntervention', resumeAuto);
-              if (!store.descriptifTravaux) {
-                 store.setField('descriptifTravaux', `Suite à notre analyse, nous vous proposons la solution suivante pour sécuriser et optimiser ${element} :\n\n- Mise en sécurité de la zone d'intervention\n- Réalisation de la prestation technique dans les règles de l'art\n- Tests de bon fonctionnement et remise en service`);
+              const tasks = [
+                "Mise en sécurité de la zone d'intervention",
+                "Préparation de l'intervention et des accès"
+              ];
+              const travauxRaw = cleanStr(store.travauxRealises) || cleanStr(store.travauxPreconises) || cleanStr(store.natureTravaux);
+              if (travauxRaw && travauxRaw.length > 5) {
+                tasks.push(travauxRaw.charAt(0).toUpperCase() + travauxRaw.slice(1));
+              } else {
+                tasks.push("Réalisation de la prestation dans les règles de l'art");
+              }
+              
+              const matRaw = cleanStr(store.materielEnvisage) || cleanStr(store.devisMateriel) || cleanStr(store.materielPrevu);
+              if (matRaw && matRaw.length > 3) {
+                tasks.push("Fourniture et pose des équipements nécessaires");
+              }
+              tasks.push("Contrôle final et remise en état de la zone");
+              
+              const descAuto = `Suite à notre analyse sur site, nous proposons l'intervention suivante :\n\n${tasks.map(t => `- ${t}`).join('\n')}`;
+              
+              let matAuto = '';
+              if (matRaw && matRaw.length > 3) {
+                matAuto = `Fourniture du matériel nécessaire à l'intervention, notamment : ${matRaw}.`;
+              }
+
+              if (!store.resumeIntervention || store.resumeIntervention.includes("SNIMOP intervient")) {
+                store.setField('resumeIntervention', resumeAuto);
+              }
+              if (!store.descriptifTravaux || store.descriptifTravaux.includes("Suite à notre analyse")) {
+                store.setField('descriptifTravaux', descAuto);
+              }
+              if (matAuto && (!store.devisMateriel || store.devisMateriel.includes("Fourniture du matériel"))) {
+                store.setField('devisMateriel', matAuto);
               }
             }}
             className="text-xs w-full bg-indigo-500/10 text-indigo-300 border-indigo-500/40 hover:bg-indigo-500/30 font-bold gap-2"
