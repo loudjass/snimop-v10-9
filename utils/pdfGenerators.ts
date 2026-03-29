@@ -694,36 +694,44 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
     y = addSection(pdf, "RÉSUMÉ DE L'INTERVENTION", store.resumeIntervention, y);
   }
   y = addSection(pdf, 'SOLUTION PROPOSÉE', store.descriptifTravaux, y);
-  y = addSection(pdf, 'MATÉRIEL FOURNI', store.devisMateriel, y);
+
+  if (!store.devisModeClient && !store.devisModeRapide) {
+    y = addSection(pdf, 'MATÉRIEL FOURNI', store.devisMateriel, y);
+  }
 
   // --- CALCULS FINANCIERS DEVIS ---
   const totals = calculateDevisTotals(store);
   
-  let textMo = cleanPdfText(store.devisMo);
-  if (totals.moHT > 0) {
-    textMo = `${totals.moHT.toFixed(2)} € HT`;
-    if (totals.d_int > 1) textMo += `\n(${totals.d_int} intervenants x ${totals.d_hr}h)`;
-    else if (totals.d_hr > 0) textMo += `\n(${totals.d_hr}h)`;
+  if (!store.devisModeClient) {
+    let textMo = cleanPdfText(store.devisMo);
+    if (totals.moHT > 0) {
+      textMo = `${totals.moHT.toFixed(2)} € HT`;
+      if (totals.d_int > 1) textMo += `\n(${totals.d_int} intervenants x ${totals.d_hr}h)`;
+      else if (totals.d_hr > 0) textMo += `\n(${totals.d_hr}h)`;
+    }
+    if (!textMo) textMo = 'Non renseigné';
+    
+    let textDep = cleanPdfText(store.devisDeplacement);
+    if (totals.dep > 0) textDep = `${totals.dep.toFixed(2)} € HT`;
+    if (!textDep) textDep = 'Non renseigné';
+
+    const yL = addSection(pdf, 'Main d\'œuvre', textMo, y, 14, 85);
+    const yR = addSection(pdf, 'Déplacement', textDep, y, 110, 85);
+    y = Math.max(yL, yR);
+
+    let textOpt = cleanPdfText(store.devisOptions) || '';
+    let linesOpt = textOpt ? [textOpt] : [];
+    if (store.nacelleActive && !store.devisModeRapide) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${totals.nacelle.toFixed(2)} € HT)`);
+    if (totals.items > 0) linesOpt.push(`AUTRES FRAIS : ${totals.items.toFixed(2)} € HT`);
+    
+    y = addSection(pdf, 'Options / Frais Annexes', linesOpt.length > 0 ? linesOpt.join('\n') : 'Aucun', y);
   }
-  if (!textMo) textMo = 'Non renseigné';
-  
-  let textDep = cleanPdfText(store.devisDeplacement);
-  if (totals.dep > 0) textDep = `${totals.dep.toFixed(2)} € HT`;
-  if (!textDep) textDep = 'Non renseigné';
 
-  const yL = addSection(pdf, 'Main d\'œuvre', textMo, y, 14, 85);
-  const yR = addSection(pdf, 'Déplacement', textDep, y, 110, 85);
-  y = Math.max(yL, yR);
-
-  let textOpt = cleanPdfText(store.devisOptions) || '';
-  let linesOpt = textOpt ? [textOpt] : [];
-  if (store.nacelleActive) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${totals.nacelle.toFixed(2)} € HT)`);
-  if (totals.items > 0) linesOpt.push(`AUTRES FRAIS : ${totals.items.toFixed(2)} € HT`);
-  
-  y = addSection(pdf, 'Options / Frais Annexes', linesOpt.length > 0 ? linesOpt.join('\n') : 'Aucun', y);
-  y = addSection(pdf, 'Réserves / Exclusions', store.reserves, y);
-  y = addSection(pdf, 'Conditions de règlement', store.conditionsReglement, y);
-  y = addSection(pdf, 'Délai de réalisation', store.delai, y);
+  if (!store.devisModeRapide) {
+    y = addSection(pdf, 'Réserves / Exclusions', store.reserves, y);
+    y = addSection(pdf, 'Conditions de règlement', store.conditionsReglement, y);
+    y = addSection(pdf, 'Délai de réalisation', store.delai, y);
+  }
 
   // CARTE VALEUR AJOUTÉE SNIMOP
   y = ensureSpace(pdf, y, 40, logo, masc, store, 'DEVIS SNIMOP');

@@ -458,36 +458,47 @@ export function ExportFinal() {
       pdf.addPage();
       y = drawHeader(pdf, "DEVIS SNIMOP");
       if (store.resumeIntervention) {
-         y = addSection("RÉSUMÉ DE L'INTERVENTION", store.resumeIntervention);
+        y = addSection("RÉSUMÉ DE L'INTERVENTION", store.resumeIntervention);
       }
       y = addSection("SOLUTION PROPOSÉE", store.descriptifTravaux);
-      y = addSection("MATÉRIEL FOURNI", store.devisMateriel);
+      
+      if (!store.devisModeClient && !store.devisModeRapide) {
+        y = addSection("MATÉRIEL FOURNI", store.devisMateriel);
+      }
       yTopLine = y;
       // --- CALCULS FINANCIERS DEVIS ---
       const totals = calculateDevisTotals(store);
-      let textMo = cleanPdfText(store.devisMo);
-      if (totals.moHT > 0) {
-        textMo = `${totals.moHT.toFixed(2)} € HT`;
-        if (totals.d_int > 1) textMo += `\n(${totals.d_int} intervenants x ${totals.d_hr}h)`;
-        else if (totals.d_hr > 0) textMo += `\n(${totals.d_hr}h)`;
+      
+      if (!store.devisModeClient) {
+        let textMo = cleanPdfText(store.devisMo);
+        if (totals.moHT > 0) {
+          textMo = `${totals.moHT.toFixed(2)} € HT`;
+          if (totals.d_int > 1) textMo += `\n(${totals.d_int} intervenants x ${totals.d_hr}h)`;
+          else if (totals.d_hr > 0) textMo += `\n(${totals.d_hr}h)`;
+        }
+        if (!textMo) textMo = 'Non renseigné';
+        
+        let textDep = cleanPdfText(store.devisDeplacement);
+        if (totals.dep > 0) textDep = `${totals.dep.toFixed(2)} € HT`;
+        if (!textDep) textDep = 'Non renseigné';
+
+        yL = addSectionAt("Main d'œuvre", textMo, 14, yTopLine, true);
+        yR = addSectionAt("Déplacement", textDep, 110, yTopLine, true);
+        y = Math.max(yL, yR);
+
+        let textOpt = cleanPdfText(store.devisOptions) || '';
+        let linesOpt = textOpt ? [textOpt] : [];
+        if (store.nacelleActive && !store.devisModeRapide) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${totals.nacelle.toFixed(2)} € HT)`);
+        if (totals.items > 0) linesOpt.push(`AUTRES FRAIS : ${totals.items.toFixed(2)} € HT`);
+        
+        y = addSection("Options / Frais Annexes", linesOpt.length > 0 ? linesOpt.join('\n') : 'Aucun');
       }
-      if (!textMo) textMo = 'Non renseigné';
-      
-      let textDep = cleanPdfText(store.devisDeplacement);
-      if (totals.dep > 0) textDep = `${totals.dep.toFixed(2)} € HT`;
-      if (!textDep) textDep = 'Non renseigné';
 
-      yL = addSectionAt("Main d'œuvre", textMo, 14, yTopLine, true);
-      yR = addSectionAt("Déplacement", textDep, 110, yTopLine, true);
-      y = Math.max(yL, yR);
-
-      let textOpt = cleanPdfText(store.devisOptions) || '';
-      let linesOpt = textOpt ? [textOpt] : [];
-      if (store.nacelleActive) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${totals.nacelle.toFixed(2)} € HT)`);
-      if (totals.items > 0) linesOpt.push(`AUTRES FRAIS : ${totals.items.toFixed(2)} € HT`);
-      
-      y = addSection("Options / Frais Annexes", linesOpt.length > 0 ? linesOpt.join('\n') : 'Aucun');
-      y = addSection("Réserves / Exclusions", store.reserves);
+      if (!store.devisModeRapide) {
+        y = addSection("Réserves / Exclusions", store.reserves);
+        y = addSection("Conditions de règlement", store.conditionsReglement);
+        y = addSection("Délai de réalisation", store.delai);
+      }
       
       // CARTE VALEUR AJOUTÉE SNIMOP
       if (y + 50 > 260) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
