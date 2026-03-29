@@ -616,7 +616,7 @@ export const generateVisitePdf = async (store: DossierData): Promise<Blob> => {
   }
 
   // ── PHOTOS DE LA VISITE ──
-  const visitePhotos = store.photos?.filter(p => ['Avant'].includes(p.type)) || [];
+  const visitePhotos = store.photos || [];
   if (visitePhotos.length > 0) {
     const hw = (p: jsPDF, l: any, m: any, s: any, title: string) => drawPageHeader(p, logo, masc, s, title);
     y = await renderPaginatedPhotos(pdf, visitePhotos, logo, masc, store, hw) || y;
@@ -757,12 +757,6 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
   }
   y += 4;
 
-  // ── PHOTOS DU DEVIS ──
-  const devisPhotos = store.photos?.filter(p => ['Plan'].includes(p.type)) || [];
-  if (devisPhotos.length > 0) {
-    const hw = (p: jsPDF, l: any, m: any, s: any, title: string) => drawPageHeader(p, logo, masc, s, title);
-    y = await renderPaginatedPhotos(pdf, devisPhotos, logo, masc, store, hw) || y;
-  }
 
   // Signature devis
   const sig = store.stepSignatures?.['devis'];
@@ -831,7 +825,7 @@ export const generateRapportPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'Observations finales', store.observationsFinales, y);
 
   // ── PHOTOS DU RAPPORT ──
-  const rapportPhotos = store.photos?.filter(p => ['Pendant', 'Après', 'Plan', 'Autre'].includes(p.type)) || [];
+  const rapportPhotos = store.photos || [];
   if (rapportPhotos.length > 0) {
     const hw = (p: jsPDF, l: any, m: any, s: any, title: string) => drawPageHeader(p, logo, masc, s, title);
     y = await renderPaginatedPhotos(pdf, rapportPhotos, logo, masc, store, hw) || y;
