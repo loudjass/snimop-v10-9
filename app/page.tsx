@@ -13,12 +13,12 @@ import { ExportFinal } from '@/components/steps/ExportFinal';
 import { ClipboardList, ClipboardSignature, Wrench, HardHat, FileText, CheckCircle2, Home as HomeIcon } from 'lucide-react';
 
 const steps = [
-  { id: 1, title: 'Infos', icon: <ClipboardList className="w-5 h-5" /> },
+  { id: 1, title: 'Informations', icon: <ClipboardList className="w-5 h-5" /> },
   { id: 2, title: 'Visite', icon: <HardHat className="w-5 h-5" /> },
   { id: 3, title: 'Devis', icon: <FileText className="w-5 h-5" /> },
-  { id: 4, title: 'Inter.', icon: <Wrench className="w-5 h-5" /> },
+  { id: 4, title: 'Intervention', icon: <Wrench className="w-5 h-5" /> },
   { id: 5, title: 'Rapport', icon: <ClipboardSignature className="w-5 h-5" /> },
-  { id: 6, title: 'Export', icon: <CheckCircle2 className="w-5 h-5" /> },
+  { id: 6, title: 'Exporter', icon: <CheckCircle2 className="w-5 h-5" /> },
 ];
 
 export default function Home() {

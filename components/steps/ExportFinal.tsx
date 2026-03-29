@@ -4,7 +4,7 @@ import { useDossierStore } from '@/store/useDossierStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SignaturePad } from '@/components/SignaturePad';
-import { ArrowLeft, Download, Share2, CheckCircle, MessageCircle, Mail } from 'lucide-react';
+import { ArrowLeft, Download, Share2, CheckCircle, MessageCircle, Mail, CheckCircle2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { format, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -819,9 +819,16 @@ export function ExportFinal() {
 
   return (
     <div className="flex flex-col gap-6 py-2">
-      <h2 className="text-3xl md:text-4xl font-black border-b border-white/10 pb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
-        Export du dossier
-      </h2>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20 shadow-inner">
+            <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
+            Exporter
+          </h2>
+        </div>
+      </div>
       <div className="bg-[#0f172a]/70 backdrop-blur-2xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-700/50 flex flex-col gap-8 mt-2">
 
         <div className="border border-slate-300 rounded-3xl p-6 bg-slate-50 shadow-inner flex flex-col gap-5 relative overflow-hidden">
@@ -847,7 +854,7 @@ export function ExportFinal() {
         <div className="flex flex-col gap-4 mt-2">
           <Button onClick={handleDownload} isLoading={isGenerating} className="py-5 text-xl tracking-wide shadow-blue-900/40 border-blue-400/50">
             <Download className="w-6 h-6 mr-2" />
-            Télécharger le Dossier PDF
+            Télécharger le Dossier Complet
           </Button>
 
           <Button onClick={handleWhatsApp} isLoading={isGenerating} variant="secondary" className="py-4 text-lg border-green-500/30 text-green-400 hover:bg-green-500/10 shadow-lg shadow-green-900/20">

@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { SignaturePad } from '@/components/SignaturePad';
-import { ArrowLeft, ArrowRight, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Download, ChevronDown, ChevronUp, HardHat } from 'lucide-react';
 import { PhotoManager } from '@/components/ui/PhotoManager';
 import { StepSignatureZone } from '@/components/ui/StepSignatureZone';
 import { generateVisitePdf, triggerDownload } from '@/utils/pdfGenerators';
@@ -81,17 +81,22 @@ export function VisiteAvantDevis() {
   return (
     <div className="flex flex-col gap-6 py-2">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
-        <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
-          Visite avant devis
-        </h2>
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20 shadow-inner">
+            <HardHat className="w-6 h-6 md:w-8 md:h-8" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
+            Visite
+          </h2>
+        </div>
         <Button
           onClick={handleExport}
           isLoading={isExporting}
           variant="outline"
-          className="gap-2 text-sm px-4 py-2 border-blue-500/30 text-blue-300 hover:bg-blue-600/10"
+          className="gap-2 text-sm px-4 py-2 border-blue-500/30 text-blue-300 hover:bg-blue-600/10 transition-colors"
         >
           <Download className="w-4 h-4" />
-          Exporter PDF Visite
+          Télécharger le PDF Visite
         </Button>
       </div>
 

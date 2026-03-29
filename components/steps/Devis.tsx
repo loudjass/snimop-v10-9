@@ -142,7 +142,7 @@ export function Devis() {
     
     const acompte = acompteDemande ? ttc * (Number(acomptePourcentage) / 100) : 0;
 
-    // Chiffrage Mode Identification
+    // Devis Mode Identification
     let calcMode: 'AUTO' | 'AJUSTÉ' | 'IMPOSÉ' = 'AUTO';
     if (isOverride) {
       calcMode = 'IMPOSÉ';
@@ -211,16 +211,21 @@ export function Devis() {
     <div className="flex flex-col gap-5 py-3 pb-52 relative">
       
       {/* HEADER & TOGGLES */}
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 border-b border-white/10 pb-4">
-        <h2 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg flex items-center gap-2">
-          <Calculator className="w-6 h-6 text-blue-400" />
-          Chiffrage
-        </h2>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20 shadow-inner">
+              <Calculator className="w-6 h-6 md:w-8 md:h-8" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-slate-200 tracking-widest uppercase drop-shadow-lg">
+              Devis
+            </h2>
+          </div>
+          <Button onClick={handleExportDevis} isLoading={isExportingDevis} variant="outline" className="gap-2 text-sm px-4 py-2 border-blue-500/30 text-blue-300 hover:bg-blue-600/10 transition-colors">
+            <Download className="w-4 h-4" /> Télécharger le PDF Devis
+          </Button>
+        </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={handleExportDevis} isLoading={isExportingDevis} variant="outline" className="gap-2 text-sm px-4 py-2 border-blue-500/30 text-blue-300 hover:bg-blue-600/10">
-            <Download className="w-4 h-4" /> Exporter PDF Devis
-          </Button>
           <Button 
             variant={store.devisModeRapide ? "default" : "outline"} 
             onClick={toggleModeRapide}
@@ -239,7 +244,6 @@ export function Devis() {
             {store.devisModeClient ? "VUE CLIENT ACTIVE" : "Afficher Version Client"}
           </Button>
         </div>
-      </div>
 
       {/* RÉSUMÉ RAPIDE TERRAIN (Seulement si Mode Client est inactif) */}
       {!store.devisModeClient && (
@@ -552,7 +556,7 @@ export function Devis() {
           >
             <div className="flex justify-between items-center border-b border-slate-800 pb-4">
               <h4 className="text-xl font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                <Settings2 className="w-5 h-5" /> Détails Chiffrage
+                <Settings2 className="w-5 h-5" /> Détails Devis
               </h4>
               <button onClick={() => setIsPanelOpen(false)} className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white">
                 <X className="w-6 h-6" />
