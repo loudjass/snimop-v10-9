@@ -374,7 +374,7 @@ const drawSignatureBlock = (
     
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(30, 40, 60);
-    pdf.text(nom || 'Non renseigné', x + pdf.getTextWidth(`${label} :`) + 2, y);
+    pdf.text(nom || '—', x + pdf.getTextWidth(`${label} :`) + 2, y);
 
     const sigY = y + 8;
     if (sigB64 && sigB64.startsWith('data:image')) {
@@ -394,7 +394,7 @@ const drawSignatureBlock = (
       pdf.setFont('helvetica', 'italic');
       pdf.setTextColor(180, 185, 200);
       pdf.text('Signature électronique', x + 42, sigY + 16, { align: 'center' });
-      pdf.text('non renseignée', x + 42, sigY + 22, { align: 'center' });
+      pdf.text('—', x + 42, sigY + 22, { align: 'center' });
     }
 
     if (label === 'Client') {
@@ -737,7 +737,7 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
 
     let textOpt = cleanPdfText(store.devisOptions) || '';
     let linesOpt = textOpt ? [textOpt] : [];
-    if (store.nacelleActive && !store.devisModeRapide) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${totals.nacelle.toFixed(2)} € HT)`);
+    if (store.nacelleActive && !store.devisModeRapide) linesOpt.push(`NACELLE : ${totals.nacelle.toFixed(2)} € HT`);
     if (totals.items > 0) linesOpt.push(`AUTRES FRAIS : ${totals.items.toFixed(2)} € HT`);
     let finalOpt = linesOpt.length > 0 ? linesOpt.join('\n') : '';
     

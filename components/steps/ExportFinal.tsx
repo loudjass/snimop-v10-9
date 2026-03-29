@@ -507,7 +507,7 @@ export function ExportFinal() {
 
         let textOpt = cleanPdfText(store.devisOptions) || '';
         let linesOpt = textOpt ? [textOpt] : [];
-        if (store.nacelleActive && !store.devisModeRapide) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${totals.nacelle.toFixed(2)} € HT)`);
+        if (store.nacelleActive && !store.devisModeRapide) linesOpt.push(`NACELLE : ${totals.nacelle.toFixed(2)} € HT`);
         if (totals.items > 0) linesOpt.push(`AUTRES FRAIS : ${totals.items.toFixed(2)} € HT`);
         let finalOpt = linesOpt.length > 0 ? linesOpt.join('\n') : '';
         
@@ -676,7 +676,7 @@ export function ExportFinal() {
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(30, 40, 60);
       const signataire = store.nomSignataireClient || store.contact || store.client || '';
-      pdf.text(signataire || 'Non renseigné', 46, y);
+      pdf.text(signataire || '—', 46, y);
 
       // Zone signature
       y += 8;
@@ -698,7 +698,7 @@ export function ExportFinal() {
         pdf.setFont("helvetica", "italic");
         pdf.setTextColor(180, 185, 200);
         pdf.text("Signature électronique", 64, y + 16, { align: 'center' });
-        pdf.text("non renseignée", 64, y + 22, { align: 'center' });
+        pdf.text("—", 64, y + 22, { align: 'center' });
       }
 
       // BON POUR ACCORD
