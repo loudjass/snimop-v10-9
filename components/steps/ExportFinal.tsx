@@ -8,7 +8,7 @@ import { ArrowLeft, Download, Share2, CheckCircle, MessageCircle, Mail, CheckCir
 import jsPDF from 'jspdf';
 import { format, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { renderPaginatedPhotos } from '../../utils/pdfGenerators';
+import { renderPaginatedPhotos, calculateDevisTotals, cleanPdfText } from '../../utils/pdfGenerators';
 
 import { SNIMOP_LOGO_PATH } from '@/components/ui/SnimopLogo';
 
@@ -262,8 +262,8 @@ export function ExportFinal() {
 
       // Un peu aéré verticalement (+8px au lieu de 5) pour les textes
       const addSection = (title: string, content?: string | number, halfWidth: boolean = false, xPos: number = 15) => {
-        let text = String(content || '').trim();
-        if (!text) text = "Non renseigné";
+        const cleanedText = cleanPdfText(String(content || ''));
+        let text = cleanedText || "Non renseigné";
         if (y > 260) { pdf.addPage(); y = drawHeader(pdf, "Suite..."); }
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
@@ -284,8 +284,8 @@ export function ExportFinal() {
       };
 
       const addSectionAt = (title: string, content: string | number | undefined, xPos: number, startY: number, halfWidth: boolean = false) => {
-        let text = String(content || '').trim();
-        if (!text) text = "Non renseigné";
+        const cleanedText = cleanPdfText(String(content || ''));
+        let text = cleanedText || "Non renseigné";
         let localY = startY;
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
@@ -434,8 +434,8 @@ export function ExportFinal() {
         pdf.text('CONTRAINTES HORAIRES :', cardX + 6, y);
         pdf.text('PERMIS REQUIS :', 105, y);
         pdf.setFont("helvetica", "normal"); pdf.setTextColor(50, 58, 75);
-        const _hor = `${store.modalitesHeureOuverture || '-'} — ${store.modalitesHeureFermeture || '-'}`;
-        const _perm = store.modalitesPermis?.length ? store.modalitesPermis.join(' • ') : 'Aucun';
+        const _hor = `Ouverture ${cleanPdfText(store.modalitesHeureOuverture) || '-'} — Fermeture ${cleanPdfText(store.modalitesHeureFermeture) || '-'}`;
+        const _perm = store.modalitesPermis?.length ? cleanPdfText(store.modalitesPermis.join(' • ')) : 'Aucun';
         pdf.text(_hor, cardX + 6, y + 5);
         pdf.text(_perm, 105, y + 5);
         y += 14;
@@ -464,30 +464,27 @@ export function ExportFinal() {
       y = addSection("MATÉRIEL FOURNI", store.devisMateriel);
       yTopLine = y;
       // --- CALCULS FINANCIERS DEVIS ---
-      const d_tx = store.tauxHoraireMO || 65;
-      const d_hr = store.heuresMO || 0;
-      const d_int = store.nombreIntervenants || 1;
-      const d_moHT = d_tx * d_hr * d_int;
-      let textMo = store.devisMo || 'Non renseigné';
-      if (d_moHT > 0) {
-        textMo = `${d_moHT.toFixed(2)} € HT`;
-        if (d_int > 1) textMo += `\n(${d_int} intervenants x ${d_hr}h)`;
+      const totals = calculateDevisTotals(store);
+      let textMo = cleanPdfText(store.devisMo);
+      if (totals.moHT > 0) {
+        textMo = `${totals.moHT.toFixed(2)} € HT`;
+        if (totals.d_int > 1) textMo += `\n(${totals.d_int} intervenants x ${totals.d_hr}h)`;
+        else if (totals.d_hr > 0) textMo += `\n(${totals.d_hr}h)`;
       }
+      if (!textMo) textMo = 'Non renseigné';
       
-      const d_dep = store.coutDeplacementHT || 0;
-      let textDep = store.devisDeplacement || 'Non renseigné';
-      if (d_dep > 0) textDep = `${d_dep.toFixed(2)} € HT`;
+      let textDep = cleanPdfText(store.devisDeplacement);
+      if (totals.dep > 0) textDep = `${totals.dep.toFixed(2)} € HT`;
+      if (!textDep) textDep = 'Non renseigné';
 
       yL = addSectionAt("Main d'œuvre", textMo, 14, yTopLine, true);
       yR = addSectionAt("Déplacement", textDep, 110, yTopLine, true);
       y = Math.max(yL, yR);
 
-      let textOpt = store.devisOptions || '';
-      const d_nac = store.nacelleActive ? (store.coutNacelleHT || 0) : 0;
-      const d_aut = store.autresFraisHT || 0;
+      let textOpt = cleanPdfText(store.devisOptions) || '';
       let linesOpt = textOpt ? [textOpt] : [];
-      if (store.nacelleActive) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${d_nac.toFixed(2)} € HT)`);
-      if (d_aut > 0) linesOpt.push(`AUTRES FRAIS : ${d_aut.toFixed(2)} € HT`);
+      if (store.nacelleActive) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${totals.nacelle.toFixed(2)} € HT)`);
+      if (totals.items > 0) linesOpt.push(`AUTRES FRAIS : ${totals.items.toFixed(2)} € HT`);
       
       y = addSection("Options / Frais Annexes", linesOpt.length > 0 ? linesOpt.join('\n') : 'Aucun');
       y = addSection("Réserves / Exclusions", store.reserves);
@@ -517,22 +514,9 @@ export function ExportFinal() {
       pdf.text("Notre priorité : vous assurer une prestation de qualité, claire et durable.", 20, y + 34);
       y += 44;
 
-      // CONDITIONS FINANCIÈRES (calcul réel)
+      // CONDITIONS FINANCIÈRES (calcul réel assuré par la fonction unifiée)
       if (y > 210) { pdf.addPage(); y = drawHeader(pdf, "DEVIS SNIMOP (Suite)"); }
       y += 8;
-
-      const _mo = (store.tauxHoraireMO || 0) * (store.heuresMO || 0);
-      const _dep = store.coutDeplacementHT || 0;
-      const _mat = store.coutMaterielHT || 0;
-      const _nac = store.nacelleActive ? (store.coutNacelleHT || 0) : 0;
-      const _aut = store.autresFraisHT || 0;
-      const _int = _mat + _mo + _dep + _nac + _aut;
-      const _marge = _int * ((store.margePourcentage || 0) / 100);
-      const _baseHT = (store.prixFinalManuel !== null && store.prixFinalManuel !== undefined)
-        ? Number(store.prixFinalManuel)
-        : _int + _marge + (store.ajustementManuel || 0);
-      const _tva = _baseHT * ((store.tvaPourcentage || 20) / 100);
-      const _ttc = _baseHT + _tva;
 
       // Titre section CONDITIONS
       pdf.setFontSize(10);
@@ -557,13 +541,13 @@ export function ExportFinal() {
       pdf.setFontSize(9.5); pdf.setFont("helvetica", "bold"); pdf.setTextColor(90, 95, 120);
       pdf.text("Montant HT :", 22, y + 13);
       pdf.setFont("helvetica", "normal"); pdf.setTextColor(40, 45, 60);
-      pdf.text(`${_baseHT.toFixed(2)} €`, 80, y + 13);
+      pdf.text(`${totals.finalHT.toFixed(2)} €`, 80, y + 13);
 
       // TVA
       pdf.setFont("helvetica", "bold"); pdf.setTextColor(90, 95, 120);
       pdf.text(`TVA (${store.tvaPourcentage || 20}%) :`, 22, y + 24);
       pdf.setFont("helvetica", "normal"); pdf.setTextColor(40, 45, 60);
-      pdf.text(`${_tva.toFixed(2)} €`, 80, y + 24);
+      pdf.text(`${totals.tvaVal.toFixed(2)} €`, 80, y + 24);
 
       // Trait séparateur
       pdf.setDrawColor(195, 210, 240); pdf.setLineWidth(0.4);
@@ -575,13 +559,13 @@ export function ExportFinal() {
       pdf.setFontSize(11); pdf.setFont("helvetica", "bold"); pdf.setTextColor(255, 255, 255);
       pdf.text("TOTAL TTC :", 24, y + 47);
       pdf.setFontSize(14);
-      pdf.text(`${_ttc.toFixed(2)} €`, 192, y + 47, { align: 'right' });
+      pdf.text(`${totals.ttc.toFixed(2)} €`, 192, y + 47, { align: 'right' });
 
       y += 62;
 
       // Acompte discret
       if (store.acompteDemande) {
-        const _ac = _ttc * ((store.acomptePourcentage || 30) / 100);
+        const _ac = totals.ttc * ((store.acomptePourcentage || 30) / 100);
         pdf.setFontSize(8.5); pdf.setTextColor(70, 100, 180); pdf.setFont("helvetica", "normal");
         pdf.text(`Acompte demandé (${store.acomptePourcentage}%) : ${_ac.toFixed(2)} €`, 22, y);
         y += 8;

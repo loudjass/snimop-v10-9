@@ -45,6 +45,49 @@ export const safeDateShort = (d?: string | null) => {
 };
 
 // ─────────────────────────────────────────────
+// DATA SECRETS & HELPERS
+// ─────────────────────────────────────────────
+export const cleanPdfText = (text?: string | number | null): string => {
+  if (text === null || text === undefined) return '';
+  const cleaned = String(text).trim();
+  if (!cleaned) return '';
+  // Rejet des suites de lettres absurdes (ex: hhhhhh)
+  if (/(.)\1{5,}/.test(cleaned.toLowerCase())) return '';
+  return cleaned;
+};
+
+export const calculateDevisTotals = (store: DossierData) => {
+  const d_tx = store.tauxHoraireMO || 0;
+  const d_hr = store.heuresMO || 0;
+  const d_int = store.nombreIntervenants || 1;
+  const moHT = d_tx * d_hr * d_int;
+  
+  const nacelle = (!store.devisModeRapide && store.nacelleActive) ? (store.coutNacelleHT || 0) : 0;
+  const dep = !store.devisModeRapide ? (store.coutDeplacementHT || 0) : 0;
+  const items = !store.devisModeRapide ? (store.autresFraisHT || 0) : 0;
+  const mat = store.coutMaterielHT || 0;
+
+  const safeMargePct = Math.min(Math.max(store.margePourcentage || 0, -100), 1000);
+  const safeTvaPct = Math.min(Math.max(store.tvaPourcentage || 0, 0), 100);
+  
+  const internalTotal = mat + moHT + dep + nacelle + items;
+  const marge = internalTotal * (safeMargePct / 100);
+  const baseHT = internalTotal + marge;
+  
+  const isOverride = store.prixFinalManuel !== null && store.prixFinalManuel !== undefined && String(store.prixFinalManuel) !== '';
+  const finalHT = isOverride ? Number(store.prixFinalManuel) : baseHT + (store.ajustementManuel || 0);
+  
+  const tvaVal = finalHT * (safeTvaPct / 100);
+  const ttc = finalHT + tvaVal;
+  
+  return {
+    d_tx, d_hr, d_int,
+    moHT, nacelle, dep, items, mat,
+    internalTotal, marge, baseHT, finalHT, tvaVal, ttc
+  };
+};
+
+// ─────────────────────────────────────────────
 // HEADER COMMUN (identique au PDF global)
 // ─────────────────────────────────────────────
 export const drawPageHeader = (
@@ -118,7 +161,8 @@ const addSection = (
   xPos = 15,
   maxWidth = 180
 ): number => {
-  const text = String(content || '').trim() || 'Non renseigné';
+  const cleanedText = cleanPdfText(String(content || ''));
+  const text = cleanedText || 'Non renseigné';
   if (y > 270) return y;
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
@@ -433,7 +477,7 @@ export const generateInfosPdf = async (store: DossierData): Promise<Blob> => {
 
   let y = drawPageHeader(pdf, logo, masc, store, 'INFORMATIONS GÉNÉRALES SNIMOP');
 
-  y = addSection(pdf, 'Dossier N°', store.numeroAffaire, y);
+  y = addSection(pdf, 'Dossier N°', cleanPdfText(store.numeroAffaire), y);
   y = addSection(pdf, 'Date', safeDateLong(store.date), y);
 
   y += 6;
@@ -453,10 +497,10 @@ export const generateInfosPdf = async (store: DossierData): Promise<Blob> => {
   pdf.setTextColor(40, 48, 65);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(10.5);
-  const clientContent = `Nom : ${store.client || 'Non renseigné'} · Contact : ${store.contact || '-'} · Tél : ${store.telephone || '-'}`;
+  const clientContent = `Nom : ${cleanPdfText(store.client) || 'Non renseigné'} · Contact : ${cleanPdfText(store.contact) || '-'} · Tél : ${cleanPdfText(store.telephone) || '-'}`;
   pdf.text(pdf.splitTextToSize(clientContent, 160), 22, y + 17);
   pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
-  pdf.text(`Email : ${store.email || '-'}`, 22, y + 28);
+  pdf.text(`Email : ${cleanPdfText(store.email) || '-'}`, 22, y + 28);
   y += 52;
 
   // ── CARTE CHANTIER ──
@@ -475,16 +519,16 @@ export const generateInfosPdf = async (store: DossierData): Promise<Blob> => {
   pdf.setTextColor(40, 48, 65);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(10.5);
-  const siteContent = `Site : ${store.site || 'Non renseigné'} · Adresse : ${store.adresse || '-'}`;
+  const siteContent = `Site : ${cleanPdfText(store.site) || 'Non renseigné'} · Adresse : ${cleanPdfText(store.adresse) || '-'}`;
   pdf.text(pdf.splitTextToSize(siteContent, 160), 22, y + 17);
   pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
-  pdf.text(`Technicien assigné : ${store.technicien || '-'}`, 22, y + 28);
+  pdf.text(`Technicien assigné : ${cleanPdfText(store.technicien) || '-'}`, 22, y + 28);
   y += 50;
 
-  y = addSection(pdf, 'Type d\'intervention', store.interventionType, y);
-  y = addSection(pdf, 'Objet / Intitulé', store.objet, y);
-  y = addSection(pdf, 'Statut du dossier', store.statutDossier, y);
-  y = addSection(pdf, 'Type de document', store.typeDoc, y);
+  y = addSection(pdf, 'Type d\'intervention', cleanPdfText(store.interventionType), y);
+  y = addSection(pdf, 'Objet / Intitulé', cleanPdfText(store.objet), y);
+  y = addSection(pdf, 'Statut du dossier', cleanPdfText(store.statutDossier), y);
+  y = addSection(pdf, 'Type de document', cleanPdfText(store.typeDoc), y);
 
   addPagination(pdf);
   return pdf.output('blob');
@@ -563,27 +607,29 @@ export const generateVisitePdf = async (store: DossierData): Promise<Blob> => {
     pdf.text("MODALITÉS D'INTERVENTION", 105, y + 6.5, { align: 'center' });
     y += 15;
 
-    const safeAddGroup = (lbl: string, val: string) => {
-      if (y + 14 > 278) {
-        y = ensureSpace(pdf, y, 100, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP');
-        y += 4;
-        pdf.setFillColor(248, 251, 255);
-        pdf.setDrawColor(195, 210, 240);
-        pdf.setLineWidth(0.3);
-        pdf.roundedRect(cardX, y, cardW, 8, 2, 2, 'FD');
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'italic');
-        pdf.setTextColor(30, 58, 138);
-        pdf.text("MODALITÉS D'INTERVENTION (suite)", cardX + 6, y + 5.5);
-        y += 14;
-      }
-      pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 58, 138);
-      pdf.text(lbl.toUpperCase() + ' :', cardX + 6, y);
-      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(50, 58, 75);
-      const valLines = pdf.splitTextToSize(val, cardW - 14);
-      pdf.text(valLines.slice(0, 3), cardX + 6, y + 5);
-      y += Math.max(14, valLines.slice(0, 3).length * 5 + 8);
-    };
+  const safeAddGroup = (lbl: string, val: string) => {
+    let cleanVal = cleanPdfText(val);
+    if (!cleanVal) return;
+    if (y + 14 > 278) {
+      y = ensureSpace(pdf, y, 100, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP');
+      y += 4;
+      pdf.setFillColor(248, 251, 255);
+      pdf.setDrawColor(195, 210, 240);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(cardX, y, cardW, 8, 2, 2, 'FD');
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setTextColor(30, 58, 138);
+      pdf.text("MODALITÉS D'INTERVENTION (suite)", cardX + 6, y + 5.5);
+      y += 14;
+    }
+    pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 58, 138);
+    pdf.text(lbl.toUpperCase() + ' :', cardX + 6, y);
+    pdf.setFont('helvetica', 'normal'); pdf.setTextColor(50, 58, 75);
+    const valLines = pdf.splitTextToSize(cleanVal, cardW - 14);
+    pdf.text(valLines.slice(0, 3), cardX + 6, y + 5);
+    y += Math.max(14, valLines.slice(0, 3).length * 5 + 8);
+  };
 
     if (m.modalitesSite) safeAddGroup('SITE', m.modalitesSite);
     if (m.modalitesInstallation) safeAddGroup('INSTALLATION', m.modalitesInstallation === 'neuf' ? 'Neuf' : 'Rénovation');
@@ -597,8 +643,11 @@ export const generateVisitePdf = async (store: DossierData): Promise<Blob> => {
     pdf.text('CONTRAINTES HORAIRES :', cardX + 6, y);
     pdf.text('PERMIS REQUIS :', 105, y);
     pdf.setFont('helvetica', 'normal'); pdf.setTextColor(50, 58, 75);
-    const hor = `Ouverture ${m.modalitesHeureOuverture || '-'} — Fermeture ${m.modalitesHeureFermeture || '-'}`;
-    const perm = m.modalitesPermis?.length ? m.modalitesPermis.join(' / ') : 'Aucun';
+    const hOuv = cleanPdfText(m.modalitesHeureOuverture);
+    const hFerm = cleanPdfText(m.modalitesHeureFermeture);
+    const hor = `Ouverture ${hOuv || '-'} — Fermeture ${hFerm || '-'}`;
+    const permRaw = m.modalitesPermis?.length ? m.modalitesPermis.join(' / ') : '';
+    const perm = cleanPdfText(permRaw) || 'Aucun';
     pdf.text(hor, cardX + 6, y + 5); pdf.text(perm, 105, y + 5);
     y += 14;
 
@@ -648,30 +697,28 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'MATÉRIEL FOURNI', store.devisMateriel, y);
 
   // --- CALCULS FINANCIERS DEVIS ---
-  const d_tx = store.tauxHoraireMO || 65;
-  const d_hr = store.heuresMO || 0;
-  const d_int = store.nombreIntervenants || 1;
-  const d_moHT = d_tx * d_hr * d_int;
-  let textMo = store.devisMo || 'Non renseigné';
-  if (d_moHT > 0) {
-    textMo = `${d_moHT.toFixed(2)} € HT`;
-    if (d_int > 1) textMo += `\n(${d_int} intervenants x ${d_hr}h)`;
-  }
+  const totals = calculateDevisTotals(store);
   
-  const d_dep = store.coutDeplacementHT || 0;
-  let textDep = store.devisDeplacement || 'Non renseigné';
-  if (d_dep > 0) textDep = `${d_dep.toFixed(2)} € HT`;
+  let textMo = cleanPdfText(store.devisMo);
+  if (totals.moHT > 0) {
+    textMo = `${totals.moHT.toFixed(2)} € HT`;
+    if (totals.d_int > 1) textMo += `\n(${totals.d_int} intervenants x ${totals.d_hr}h)`;
+    else if (totals.d_hr > 0) textMo += `\n(${totals.d_hr}h)`;
+  }
+  if (!textMo) textMo = 'Non renseigné';
+  
+  let textDep = cleanPdfText(store.devisDeplacement);
+  if (totals.dep > 0) textDep = `${totals.dep.toFixed(2)} € HT`;
+  if (!textDep) textDep = 'Non renseigné';
 
   const yL = addSection(pdf, 'Main d\'œuvre', textMo, y, 14, 85);
   const yR = addSection(pdf, 'Déplacement', textDep, y, 110, 85);
   y = Math.max(yL, yR);
 
-  let textOpt = store.devisOptions || '';
-  const d_nac = store.nacelleActive ? (store.coutNacelleHT || 0) : 0;
-  const d_aut = store.autresFraisHT || 0;
+  let textOpt = cleanPdfText(store.devisOptions) || '';
   let linesOpt = textOpt ? [textOpt] : [];
-  if (store.nacelleActive) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${d_nac.toFixed(2)} € HT)`);
-  if (d_aut > 0) linesOpt.push(`AUTRES FRAIS : ${d_aut.toFixed(2)} € HT`);
+  if (store.nacelleActive) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${totals.nacelle.toFixed(2)} € HT)`);
+  if (totals.items > 0) linesOpt.push(`AUTRES FRAIS : ${totals.items.toFixed(2)} € HT`);
   
   y = addSection(pdf, 'Options / Frais Annexes', linesOpt.length > 0 ? linesOpt.join('\n') : 'Aucun', y);
   y = addSection(pdf, 'Réserves / Exclusions', store.reserves, y);
@@ -707,21 +754,6 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
   y = ensureSpace(pdf, y, 100, logo, masc, store, 'DEVIS SNIMOP');
 
   // ── BLOC FINANCIER PREMIUM ──
-  const tauxHoraire = store.tauxHoraireMO || 65;
-  const heures = store.heuresMO || 0;
-  const moHT = tauxHoraire * heures;
-  const dep = store.coutDeplacementHT || 0;
-  const mat = store.coutMaterielHT || 0;
-  const nacelle = store.nacelleActive ? (store.coutNacelleHT || 0) : 0;
-  const autres = store.autresFraisHT || 0;
-  const internalTotal = mat + moHT + dep + nacelle + autres;
-  const marge = internalTotal * ((store.margePourcentage || 30) / 100);
-  const baseHT = store.prixFinalManuel !== null && store.prixFinalManuel !== undefined
-    ? Number(store.prixFinalManuel)
-    : internalTotal + marge + (store.ajustementManuel || 0);
-  const tva = baseHT * ((store.tvaPourcentage || 20) / 100);
-  const ttc = baseHT + tva;
-
   y = ensureSpace(pdf, y, 70, logo, masc, store, 'DEVIS SNIMOP');
   y += 6;
 
@@ -748,13 +780,13 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
   pdf.setFontSize(9.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(90, 95, 120);
   pdf.text('Montant HT :', 22, y + 13);
   pdf.setFont('helvetica', 'normal'); pdf.setTextColor(40, 45, 60);
-  pdf.text(`${baseHT.toFixed(2)} €`, 80, y + 13);
+  pdf.text(`${totals.finalHT.toFixed(2)} €`, 80, y + 13);
 
   // TVA
   pdf.setFont('helvetica', 'bold'); pdf.setTextColor(90, 95, 120);
   pdf.text(`TVA (${store.tvaPourcentage || 20}%) :`, 22, y + 24);
   pdf.setFont('helvetica', 'normal'); pdf.setTextColor(40, 45, 60);
-  pdf.text(`${tva.toFixed(2)} €`, 80, y + 24);
+  pdf.text(`${totals.tvaVal.toFixed(2)} €`, 80, y + 24);
 
   // Trait séparateur
   pdf.setDrawColor(195, 210, 240); pdf.setLineWidth(0.4);
@@ -766,13 +798,13 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
   pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(255, 255, 255);
   pdf.text('TOTAL TTC :', 24, y + 47);
   pdf.setFontSize(14);
-  pdf.text(`${ttc.toFixed(2)} €`, 192, y + 47, { align: 'right' });
+  pdf.text(`${totals.ttc.toFixed(2)} €`, 192, y + 47, { align: 'right' });
 
   y += 62;
 
   // Acompte discret
   if (store.acompteDemande) {
-    const acompte = ttc * ((store.acomptePourcentage || 30) / 100);
+    const acompte = totals.ttc * ((store.acomptePourcentage || 30) / 100);
     pdf.setFontSize(8.5); pdf.setTextColor(70, 100, 180); pdf.setFont('helvetica', 'normal');
     pdf.text(`Acompte demandé (${store.acomptePourcentage}%) : ${acompte.toFixed(2)} €`, 22, y);
     y += 8;
