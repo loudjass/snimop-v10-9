@@ -481,49 +481,67 @@ export const generateInfosPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'Date', safeDateLong(store.date), y);
 
   y += 6;
+  
   // ── CARTE CLIENT ──
-  pdf.setFillColor(200, 208, 228);
-  pdf.roundedRect(16.5, y + 1.5, 180, 42, 3, 3, 'F');
-  pdf.setFillColor(248, 251, 255);
-  pdf.setDrawColor(195, 210, 240);
-  pdf.setLineWidth(0.3);
-  pdf.roundedRect(15, y, 180, 42, 3, 3, 'FD');
-  pdf.setFillColor(30, 58, 138);
-  pdf.roundedRect(15, y, 180, 11, 3, 3, 'F');
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(11);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('CLIENT', 25, y + 7.5);
-  pdf.setTextColor(40, 48, 65);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(10.5);
-  const clientContent = `Nom : ${cleanPdfText(store.client) || ''} · Contact : ${cleanPdfText(store.contact) || ''} · Tél : ${cleanPdfText(store.telephone) || ''}`;
-  pdf.text(pdf.splitTextToSize(clientContent, 160), 22, y + 17);
-  pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
-  pdf.text(`Email : ${cleanPdfText(store.email) || ''}`, 22, y + 28);
-  y += 52;
+  const cItems = [];
+  if (cleanPdfText(store.client)) cItems.push(`Nom : ${cleanPdfText(store.client)}`);
+  if (cleanPdfText(store.contact)) cItems.push(`Contact : ${cleanPdfText(store.contact)}`);
+  if (cleanPdfText(store.telephone)) cItems.push(`Tél : ${cleanPdfText(store.telephone)}`);
+  const cEmail = cleanPdfText(store.email);
+  
+  if (cItems.length > 0 || cEmail) {
+    pdf.setFillColor(200, 208, 228);
+    pdf.roundedRect(16.5, y + 1.5, 180, 42, 3, 3, 'F');
+    pdf.setFillColor(248, 251, 255);
+    pdf.setDrawColor(195, 210, 240);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(15, y, 180, 42, 3, 3, 'FD');
+    pdf.setFillColor(30, 58, 138);
+    pdf.roundedRect(15, y, 180, 11, 3, 3, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('CLIENT', 25, y + 7.5);
+    pdf.setTextColor(40, 48, 65);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10.5);
+    if (cItems.length > 0) pdf.text(pdf.splitTextToSize(cItems.join(' · '), 160), 22, y + 17);
+    if (cEmail) {
+      pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
+      pdf.text(`Email : ${cEmail}`, 22, y + 28);
+    }
+    y += 52;
+  }
 
   // ── CARTE CHANTIER ──
-  pdf.setFillColor(200, 208, 228);
-  pdf.roundedRect(16.5, y + 1.5, 180, 42, 3, 3, 'F');
-  pdf.setFillColor(248, 251, 255);
-  pdf.setDrawColor(195, 210, 240);
-  pdf.setLineWidth(0.3);
-  pdf.roundedRect(15, y, 180, 42, 3, 3, 'FD');
-  pdf.setFillColor(30, 58, 138);
-  pdf.roundedRect(15, y, 180, 11, 3, 3, 'F');
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(11);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('CHANTIER', 25, y + 7.5);
-  pdf.setTextColor(40, 48, 65);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(10.5);
-  const siteContent = `Site : ${cleanPdfText(store.site) || ''} · Adresse : ${cleanPdfText(store.adresse) || ''}`;
-  pdf.text(pdf.splitTextToSize(siteContent, 160), 22, y + 17);
-  pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
-  pdf.text(`Technicien assigné : ${cleanPdfText(store.technicien) || ''}`, 22, y + 28);
-  y += 50;
+  const sItems = [];
+  if (cleanPdfText(store.site)) sItems.push(`Site : ${cleanPdfText(store.site)}`);
+  if (cleanPdfText(store.adresse)) sItems.push(`Adresse : ${cleanPdfText(store.adresse)}`);
+  const sTech = cleanPdfText(store.technicien);
+
+  if (sItems.length > 0 || sTech) {
+    pdf.setFillColor(200, 208, 228);
+    pdf.roundedRect(16.5, y + 1.5, 180, 42, 3, 3, 'F');
+    pdf.setFillColor(248, 251, 255);
+    pdf.setDrawColor(195, 210, 240);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(15, y, 180, 42, 3, 3, 'FD');
+    pdf.setFillColor(30, 58, 138);
+    pdf.roundedRect(15, y, 180, 11, 3, 3, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('CHANTIER', 25, y + 7.5);
+    pdf.setTextColor(40, 48, 65);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10.5);
+    if (sItems.length > 0) pdf.text(pdf.splitTextToSize(sItems.join(' · '), 160), 22, y + 17);
+    if (sTech) {
+      pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
+      pdf.text(`Technicien assigné : ${sTech}`, 22, y + 28);
+    }
+    y += 50;
+  }
 
   y = addSection(pdf, 'Type d\'intervention', cleanPdfText(store.interventionType), y);
   y = addSection(pdf, 'Objet / Intitulé', cleanPdfText(store.objet), y);
@@ -542,7 +560,7 @@ export const generateVisitePdf = async (store: DossierData): Promise<Blob> => {
 
   let y = drawPageHeader(pdf, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP');
 
-  y = addSection(pdf, 'Contexte / Demande client', store.contexte || store.constat, y);
+  y = addSection(pdf, 'Contexte / Demande client', store.contexte, y);
   y = addSection(pdf, 'Constat sur place', store.constat, y);
   y = addSection(pdf, 'Équipement concerné', store.equipement, y);
   y = addSection(pdf, 'ANALYSE & RECOMMANDATIONS', store.observations, y);
@@ -839,7 +857,7 @@ export const generateBonPdf = async (store: DossierData): Promise<Blob> => {
   let y = drawPageHeader(pdf, logo, masc, store, "BON D'INTERVENTION SNIMOP");
 
   const hasHoraires = store.heureDebut || store.heureFin;
-  let dateText = store.dateIntervention ? safeDateLong(store.dateIntervention) : 'Non renseignée';
+  let dateText = store.dateIntervention ? safeDateLong(store.dateIntervention) : '';
   if (hasHoraires) {
     if (store.heureDebut && store.heureFin) dateText += ` de ${store.heureDebut} à ${store.heureFin}`;
     else if (store.heureDebut) dateText += ` à partir de ${store.heureDebut}`;

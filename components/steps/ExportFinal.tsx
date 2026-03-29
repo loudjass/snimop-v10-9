@@ -309,11 +309,30 @@ export function ExportFinal() {
       pdf.addPage();
       y = drawHeader(pdf, "INFORMATIONS GÉNÉRALES SNIMOP");
       let yTopLine = y;
-      let yL = addSectionAt("Client", `Nom: ${store.client || 'Non renseigné'}\nContact: ${store.contact || '-'}\nTél: ${store.telephone || '-'}\nEmail: ${store.email || '-'}`, 14, yTopLine, true);
-      let yR = addSectionAt("Chantier", `Site: ${store.site || 'Non renseigné'}\nAdresse: ${store.adresse || '-'}\nTechnicien: ${store.technicien || '-'}`, 110, yTopLine, true);
-      y = Math.max(yL, yR) + 5;
+      
+      const cItems = [];
+      if (cleanPdfText(store.client)) cItems.push(`Nom: ${cleanPdfText(store.client)}`);
+      if (cleanPdfText(store.contact)) cItems.push(`Contact: ${cleanPdfText(store.contact)}`);
+      if (cleanPdfText(store.telephone)) cItems.push(`Tél: ${cleanPdfText(store.telephone)}`);
+      if (cleanPdfText(store.email)) cItems.push(`Email: ${cleanPdfText(store.email)}`);
+
+      const sItems = [];
+      if (cleanPdfText(store.site)) sItems.push(`Site: ${cleanPdfText(store.site)}`);
+      if (cleanPdfText(store.adresse)) sItems.push(`Adresse: ${cleanPdfText(store.adresse)}`);
+      if (cleanPdfText(store.technicien)) sItems.push(`Technicien: ${cleanPdfText(store.technicien)}`);
+
+      let yL = yTopLine;
+      if (cItems.length > 0) yL = addSectionAt("Client", cItems.join('\n'), 14, yTopLine, true);
+      
+      let yR = yTopLine;
+      if (sItems.length > 0) yR = addSectionAt("Chantier", sItems.join('\n'), 110, yTopLine, true);
+      
+      y = Math.max(yL, yR);
+      if (y > yTopLine) y += 5;
+
       pdf.setDrawColor(230, 230, 230);
       pdf.line(14, y - 5, 196, y - 5);
+      
       y = addSection("Objet de l'intervention", store.objet);
       yTopLine = y;
       yL = addSectionAt("Type d'intervention", store.interventionType, 14, yTopLine, true);
@@ -324,7 +343,8 @@ export function ExportFinal() {
       // PAGE 3
       pdf.addPage();
       y = drawHeader(pdf, "VISITE AVANT DEVIS SNIMOP");
-      y = addSection("Contexte et Constat", store.constat || store.contexte);
+      y = addSection("Contexte / Demande client", store.contexte);
+      y = addSection("Constat sur place", store.constat);
       y = addSection("Équipement concerné", store.equipement);
       y = addSection("ANALYSE & RECOMMANDATIONS", store.observations); 
       y = addSection("SOLUTION PROPOSÉE", store.travauxPreconises);
@@ -583,15 +603,11 @@ export function ExportFinal() {
       }
       y += 4;
 
-      const yRL = addSectionAt("Règlement", store.conditionsReglement, 15, y, true);
-      const yRR = addSectionAt("Délai", store.delai, 110, y, true);
-      y = Math.max(yRL, yRR);
-
       // PAGE 5
       pdf.addPage();
       y = drawHeader(pdf, "BON D'INTERVENTION SNIMOP");
       const hasHor = store.heureDebut || store.heureFin;
-      let dTxt = store.dateIntervention ? getSafeDateFormatted(store.dateIntervention) : 'Non renseignée';
+      let dTxt = store.dateIntervention ? getSafeDateFormatted(store.dateIntervention) : '';
       if (hasHor) {
         if (store.heureDebut && store.heureFin) dTxt += ` de ${store.heureDebut} à ${store.heureFin}`;
         else if (store.heureDebut) dTxt += ` à partir de ${store.heureDebut}`;
