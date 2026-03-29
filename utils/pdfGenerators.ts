@@ -98,7 +98,7 @@ export const drawPageHeader = (
       const mw = 120;
       const mh = mw / mascotteData.ratio;
       pdf.saveGraphicsState();
-      pdf.setGState(new (pdf as any).GState({ opacity: 0.085 }));
+      pdf.setGState(new (pdf as any).GState({ opacity: 0.1 }));
       pdf.addImage(mascotteData.img, 'PNG', (210 - mw) / 2, (297 - mh) / 2 + 10, mw, mh);
       pdf.restoreGraphicsState();
     } catch (_) {}
@@ -127,14 +127,14 @@ const addSection = (
   pdf.setDrawColor(215, 222, 236);
   pdf.setLineWidth(0.2);
   pdf.line(xPos, y + 1.5, xPos + maxWidth, y + 1.5);
-  y += 5.5;
+  y += 4.5;
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   const lines = pdf.splitTextToSize(text, maxWidth);
   // Small padding for long texts
   pdf.text(lines, xPos, y + (lines.length > 2 ? 0.5 : 0));
-  return y + lines.length * 5 + 6; 
+  return y + lines.length * 4.5 + 5; 
 };
 
 // ─────────────────────────────────────────────
@@ -172,12 +172,28 @@ const drawPhotos = async (
   const filtered = photos.filter(p => types.includes(p.type)).slice(0, 4);
   if (filtered.length === 0) return;
 
-  const PHOTO_W = 84;
-  const CARD_H  = 80;
-  const IMG_H   = 54;
-  const GAP_X   = 8;
-  const GAP_Y   = 8;
-  const MX      = 15;
+  let colCount = 2;
+  let PHOTO_W = 84;
+  let CARD_H  = 80;
+  let IMG_H   = 54;
+  let GAP_X   = 8;
+  let GAP_Y   = 8;
+  let startX  = 15;
+
+  if (filtered.length === 1) {
+    colCount = 1;
+    PHOTO_W = 140;
+    CARD_H  = 120;
+    IMG_H   = 90;
+    startX  = 35; 
+  } else if (filtered.length === 2) {
+    colCount = 1;
+    PHOTO_W = 120;
+    CARD_H  = 90;
+    IMG_H   = 64;
+    startX  = 45; 
+    GAP_Y   = 10;
+  }
 
   const getLabel = (type: string) => {
     switch (type) {
@@ -189,7 +205,7 @@ const drawPhotos = async (
     }
   };
 
-  const totalRows = Math.ceil(filtered.length / 2);
+  const totalRows = Math.ceil(filtered.length / colCount);
   const titleH = 14;
   const neededForBlock = titleH + totalRows * (CARD_H + GAP_Y);
 
@@ -207,21 +223,21 @@ const drawPhotos = async (
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(80, 95, 115);
-  pdf.text('PHOTOS ET ILLUSTRATIONS :', MX, yRef.y);
+  pdf.text('PHOTOS ET ILLUSTRATIONS :', 15, yRef.y);
   pdf.setDrawColor(210, 215, 225);
   pdf.setLineWidth(0.2);
-  pdf.line(MX, yRef.y + 2, 195, yRef.y + 2);
+  pdf.line(15, yRef.y + 2, 195, yRef.y + 2);
   yRef.y += 8;
 
   for (let row = 0; row < totalRows; row++) {
-    const rowPhotos = filtered.slice(row * 2, row * 2 + 2);
+    const rowPhotos = filtered.slice(row * colCount, row * colCount + colCount);
 
     for (let col = 0; col < rowPhotos.length; col++) {
       const photo = rowPhotos[col];
       const pd = await loadPhotoBase64(photo.imageBase64);
       if (!pd) continue;
       
-      const cx = MX + col * (PHOTO_W + GAP_X);
+      const cx = startX + col * (PHOTO_W + GAP_X);
       const cy = yRef.y;
 
       // Ombre douce
@@ -526,7 +542,7 @@ export const generateVisitePdf = async (store: DossierData): Promise<Blob> => {
         const mX = cardX + (cardW - mWidth) / 2;
         const mY = y + (safeCardH - mHeight) / 2;
         pdf.saveGraphicsState();
-        pdf.setGState(new (pdf as any).GState({ opacity: 0.03 }));
+        pdf.setGState(new (pdf as any).GState({ opacity: 0.05 }));
         pdf.addImage(masc.img, 'PNG', mX, mY, mWidth, mHeight);
         pdf.restoreGraphicsState();
       } catch(e) {}
