@@ -69,7 +69,7 @@ export function ExportFinal() {
     if (!isValid(parsedDate)) return format(new Date(), 'dd MMMM yyyy', { locale: fr });
     return format(parsedDate, 'dd MMMM yyyy', { locale: fr });
   };
-  
+
   const getSafeDateShort = (dateStr: string | undefined | null) => {
     if (!dateStr) return format(new Date(), 'dd/MM/yyyy', { locale: fr });
     const parsedDate = new Date(dateStr);
@@ -491,11 +491,11 @@ export function ExportFinal() {
       const totals = calculateDevisTotals(store);
       
       if (!store.devisModeClient) {
-        let textMo = cleanPdfText(store.devisMo);
+        let textMo = '';
         if (totals.moHT > 0) {
-          textMo = `${totals.moHT.toFixed(2)} € HT`;
-          if (totals.d_int > 1) textMo += `\n(${totals.d_int} intervenants x ${totals.d_hr}h)`;
-          else if (totals.d_hr > 0) textMo += `\n(${totals.d_hr}h)`;
+          textMo = `${totals.moHT.toFixed(2)} € HT\n(${totals.d_int} intervenant${totals.d_int > 1 ? 's' : ''} x ${totals.d_hr}h)`;
+        } else {
+          textMo = cleanPdfText(store.devisMo);
         }
         
         let textDep = cleanPdfText(store.devisDeplacement);
