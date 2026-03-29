@@ -161,8 +161,9 @@ const addSection = (
   xPos = 15,
   maxWidth = 180
 ): number => {
-  const cleanedText = cleanPdfText(String(content || ''));
-  const text = cleanedText || 'Non renseigné';
+  const text = cleanPdfText(String(content || ''));
+  if (!text) return y;
+  
   if (y > 270) return y;
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
@@ -176,7 +177,6 @@ const addSection = (
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   const lines = pdf.splitTextToSize(text, maxWidth);
-  // Small padding for long texts
   pdf.text(lines, xPos, y + (lines.length > 2 ? 0.5 : 0));
   return y + lines.length * 4.5 + 5; 
 };
@@ -497,10 +497,10 @@ export const generateInfosPdf = async (store: DossierData): Promise<Blob> => {
   pdf.setTextColor(40, 48, 65);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(10.5);
-  const clientContent = `Nom : ${cleanPdfText(store.client) || 'Non renseigné'} · Contact : ${cleanPdfText(store.contact) || '-'} · Tél : ${cleanPdfText(store.telephone) || '-'}`;
+  const clientContent = `Nom : ${cleanPdfText(store.client) || ''} · Contact : ${cleanPdfText(store.contact) || ''} · Tél : ${cleanPdfText(store.telephone) || ''}`;
   pdf.text(pdf.splitTextToSize(clientContent, 160), 22, y + 17);
   pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
-  pdf.text(`Email : ${cleanPdfText(store.email) || '-'}`, 22, y + 28);
+  pdf.text(`Email : ${cleanPdfText(store.email) || ''}`, 22, y + 28);
   y += 52;
 
   // ── CARTE CHANTIER ──
@@ -519,10 +519,10 @@ export const generateInfosPdf = async (store: DossierData): Promise<Blob> => {
   pdf.setTextColor(40, 48, 65);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(10.5);
-  const siteContent = `Site : ${cleanPdfText(store.site) || 'Non renseigné'} · Adresse : ${cleanPdfText(store.adresse) || '-'}`;
+  const siteContent = `Site : ${cleanPdfText(store.site) || ''} · Adresse : ${cleanPdfText(store.adresse) || ''}`;
   pdf.text(pdf.splitTextToSize(siteContent, 160), 22, y + 17);
   pdf.setFontSize(9.5); pdf.setTextColor(80, 90, 110);
-  pdf.text(`Technicien assigné : ${cleanPdfText(store.technicien) || '-'}`, 22, y + 28);
+  pdf.text(`Technicien assigné : ${cleanPdfText(store.technicien) || ''}`, 22, y + 28);
   y += 50;
 
   y = addSection(pdf, 'Type d\'intervention', cleanPdfText(store.interventionType), y);
@@ -709,11 +709,9 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
       if (totals.d_int > 1) textMo += `\n(${totals.d_int} intervenants x ${totals.d_hr}h)`;
       else if (totals.d_hr > 0) textMo += `\n(${totals.d_hr}h)`;
     }
-    if (!textMo) textMo = 'Non renseigné';
     
     let textDep = cleanPdfText(store.devisDeplacement);
     if (totals.dep > 0) textDep = `${totals.dep.toFixed(2)} € HT`;
-    if (!textDep) textDep = 'Non renseigné';
 
     const yL = addSection(pdf, 'Main d\'œuvre', textMo, y, 14, 85);
     const yR = addSection(pdf, 'Déplacement', textDep, y, 110, 85);
@@ -723,8 +721,9 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
     let linesOpt = textOpt ? [textOpt] : [];
     if (store.nacelleActive && !store.devisModeRapide) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${totals.nacelle.toFixed(2)} € HT)`);
     if (totals.items > 0) linesOpt.push(`AUTRES FRAIS : ${totals.items.toFixed(2)} € HT`);
+    let finalOpt = linesOpt.length > 0 ? linesOpt.join('\n') : '';
     
-    y = addSection(pdf, 'Options / Frais Annexes', linesOpt.length > 0 ? linesOpt.join('\n') : 'Aucun', y);
+    if (finalOpt) y = addSection(pdf, 'Options / Frais Annexes', finalOpt, y);
   }
 
   if (!store.devisModeRapide) {

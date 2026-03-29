@@ -262,8 +262,9 @@ export function ExportFinal() {
 
       // Un peu aéré verticalement (+8px au lieu de 5) pour les textes
       const addSection = (title: string, content?: string | number, halfWidth: boolean = false, xPos: number = 15) => {
-        const cleanedText = cleanPdfText(String(content || ''));
-        let text = cleanedText || "Non renseigné";
+        const text = cleanPdfText(String(content || ''));
+        if (!text) return y;
+        
         if (y > 260) { pdf.addPage(); y = drawHeader(pdf, "Suite..."); }
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
@@ -278,14 +279,14 @@ export function ExportFinal() {
         pdf.setTextColor(55, 65, 81);
         const ObjectifWidth = halfWidth ? 85 : 180;
         const lines = pdf.splitTextToSize(text, ObjectifWidth);
-        // Small padding for long texts
         pdf.text(lines, xPos, y + (lines.length > 2 ? 0.5 : 0));
         return y + (lines.length * 4.5) + 5; 
       };
 
       const addSectionAt = (title: string, content: string | number | undefined, xPos: number, startY: number, halfWidth: boolean = false) => {
-        const cleanedText = cleanPdfText(String(content || ''));
-        let text = cleanedText || "Non renseigné";
+        const text = cleanPdfText(String(content || ''));
+        if (!text) return startY;
+        
         let localY = startY;
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
@@ -476,11 +477,9 @@ export function ExportFinal() {
           if (totals.d_int > 1) textMo += `\n(${totals.d_int} intervenants x ${totals.d_hr}h)`;
           else if (totals.d_hr > 0) textMo += `\n(${totals.d_hr}h)`;
         }
-        if (!textMo) textMo = 'Non renseigné';
         
         let textDep = cleanPdfText(store.devisDeplacement);
         if (totals.dep > 0) textDep = `${totals.dep.toFixed(2)} € HT`;
-        if (!textDep) textDep = 'Non renseigné';
 
         yL = addSectionAt("Main d'œuvre", textMo, 14, yTopLine, true);
         yR = addSectionAt("Déplacement", textDep, 110, yTopLine, true);
@@ -490,8 +489,9 @@ export function ExportFinal() {
         let linesOpt = textOpt ? [textOpt] : [];
         if (store.nacelleActive && !store.devisModeRapide) linesOpt.push(`OPTION NACELLE : Oui (Coût: ${totals.nacelle.toFixed(2)} € HT)`);
         if (totals.items > 0) linesOpt.push(`AUTRES FRAIS : ${totals.items.toFixed(2)} € HT`);
+        let finalOpt = linesOpt.length > 0 ? linesOpt.join('\n') : '';
         
-        y = addSection("Options / Frais Annexes", linesOpt.length > 0 ? linesOpt.join('\n') : 'Aucun');
+        if (finalOpt) y = addSection("Options / Frais Annexes", finalOpt);
       }
 
       if (!store.devisModeRapide) {
