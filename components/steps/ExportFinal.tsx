@@ -314,6 +314,11 @@ export function ExportFinal() {
       pdf.setDrawColor(230, 230, 230);
       pdf.line(14, y - 5, 196, y - 5);
       y = addSection("Objet de l'intervention", store.objet);
+      yTopLine = y;
+      yL = addSectionAt("Type d'intervention", store.interventionType, 14, yTopLine, true);
+      yR = addSectionAt("Statut du dossier", store.statutDossier, 110, yTopLine, true);
+      y = Math.max(yL, yR);
+      y = addSection("Type de document", store.typeDoc);
 
       // PAGE 3
       pdf.addPage();

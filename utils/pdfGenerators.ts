@@ -483,6 +483,7 @@ export const generateInfosPdf = async (store: DossierData): Promise<Blob> => {
 
   y = addSection(pdf, 'Type d\'intervention', store.interventionType, y);
   y = addSection(pdf, 'Objet / Intitulé', store.objet, y);
+  y = addSection(pdf, 'Statut du dossier', store.statutDossier, y);
   y = addSection(pdf, 'Type de document', store.typeDoc, y);
 
   addPagination(pdf);
