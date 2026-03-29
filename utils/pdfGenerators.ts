@@ -167,7 +167,9 @@ export const renderPaginatedPhotos = async (
   store: DossierData,
   drawPageHeaderFn: (p: jsPDF, l: ImgData | null, m: ImgData | null, s: DossierData, t: string) => number
 ) => {
-  if (!photos || photos.length === 0) return;
+  if (!photos || photos.length === 0) return undefined;
+
+  let currentY = 0;
 
   const chunks = [];
   for (let i = 0; i < photos.length; i += 4) {
@@ -281,7 +283,9 @@ export const renderPaginatedPhotos = async (
       }
       y += CARD_H + GAP_Y;
     }
+    currentY = y;
   }
+  return currentY;
 };
 
 // ─────────────────────────────────────────────
@@ -610,6 +614,13 @@ export const generateVisitePdf = async (store: DossierData): Promise<Blob> => {
     }
   }
 
+  // ── PHOTOS DE LA VISITE ──
+  const visitePhotos = store.photos?.filter(p => ['Avant'].includes(p.type)) || [];
+  if (visitePhotos.length > 0) {
+    const hw = (p: jsPDF, l: any, m: any, s: any, title: string) => drawPageHeader(p, logo, masc, s, title);
+    y = await renderPaginatedPhotos(pdf, visitePhotos, logo, masc, store, hw) || y;
+  }
+
   // Signature step visite
   const sig = store.stepSignatures?.['visite'];
   y = ensureSpace(pdf, y, 50, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP');
@@ -745,6 +756,13 @@ export const generateDevisPdf = async (store: DossierData): Promise<Blob> => {
   }
   y += 4;
 
+  // ── PHOTOS DU DEVIS ──
+  const devisPhotos = store.photos?.filter(p => ['Plan'].includes(p.type)) || [];
+  if (devisPhotos.length > 0) {
+    const hw = (p: jsPDF, l: any, m: any, s: any, title: string) => drawPageHeader(p, logo, masc, s, title);
+    y = await renderPaginatedPhotos(pdf, devisPhotos, logo, masc, store, hw) || y;
+  }
+
   // Signature devis
   const sig = store.stepSignatures?.['devis'];
   y = ensureSpace(pdf, y, 50, logo, masc, store, 'DEVIS SNIMOP');
@@ -768,6 +786,13 @@ export const generateBonPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'SOLUTION PROPOSÉE', store.natureTravaux, y);
   y = addSection(pdf, 'MATÉRIEL FOURNI', store.materielPrevu, y);
   y = addSection(pdf, 'Consignes / Remarques', store.consignes, y);
+
+  // ── PHOTOS DU BON D'INTERVENTION ──
+  const bonPhotos = store.photos?.filter(p => ['Avant', 'Pendant'].includes(p.type)) || [];
+  if (bonPhotos.length > 0) {
+    const hw = (p: jsPDF, l: any, m: any, s: any, title: string) => drawPageHeader(p, logo, masc, s, title);
+    y = await renderPaginatedPhotos(pdf, bonPhotos, logo, masc, store, hw) || y;
+  }
 
   const sig = store.stepSignatures?.['intervention'];
   y = ensureSpace(pdf, y, 50, logo, masc, store, "BON D'INTERVENTION SNIMOP");
@@ -799,8 +824,15 @@ export const generateRapportPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'Réserves', store.rapportReserves, y);
   y = addSection(pdf, 'Observations finales', store.observationsFinales, y);
 
+  // ── PHOTOS DU RAPPORT ──
+  const rapportPhotos = store.photos?.filter(p => ['Pendant', 'Après', 'Plan', 'Autre'].includes(p.type)) || [];
+  if (rapportPhotos.length > 0) {
+    const hw = (p: jsPDF, l: any, m: any, s: any, title: string) => drawPageHeader(p, logo, masc, s, title);
+    y = await renderPaginatedPhotos(pdf, rapportPhotos, logo, masc, store, hw) || y;
+  }
+
   const sig = store.stepSignatures?.['rapport'];
-  y = ensureSpace(pdf, y, 50, logo, masc, store, "RAPPORT D'INTERVENTION SNIMOP");
+  y = ensureSpace(pdf, y, 50, logo, masc, store, "COMPTE RENDU D'INTERVENTION");
   drawSignatureBlock(pdf, sig, y, 'Rapport Final');
 
   addPagination(pdf);
