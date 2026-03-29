@@ -157,42 +157,21 @@ const ensureSpace = (
 };
 
 // ─────────────────────────────────────────────
-// BLOC PHOTOS (jusqu'à 4 photos par page)
+// BLOC PHOTOS CENTRALISÉ ET EXHAUSTIF (PAGINÉ)
 // ─────────────────────────────────────────────
-const drawPhotos = async (
+export const renderPaginatedPhotos = async (
   pdf: jsPDF,
   photos: DossierData['photos'],
-  types: string[],
-  yRef: { y: number },
-  logoData: ImgData,
-  mascotteData: ImgData,
+  logoData: ImgData | null,
+  mascotteData: ImgData | null,
   store: DossierData,
-  sectionTitle: string
+  drawPageHeaderFn: (p: jsPDF, l: ImgData | null, m: ImgData | null, s: DossierData, t: string) => number
 ) => {
-  const filtered = photos.filter(p => types.includes(p.type)).slice(0, 4);
-  if (filtered.length === 0) return;
+  if (!photos || photos.length === 0) return;
 
-  let colCount = 2;
-  let PHOTO_W = 84;
-  let CARD_H  = 80;
-  let IMG_H   = 54;
-  let GAP_X   = 8;
-  let GAP_Y   = 8;
-  let startX  = 15;
-
-  if (filtered.length === 1) {
-    colCount = 1;
-    PHOTO_W = 140;
-    CARD_H  = 120;
-    IMG_H   = 90;
-    startX  = 35; 
-  } else if (filtered.length === 2) {
-    colCount = 1;
-    PHOTO_W = 120;
-    CARD_H  = 90;
-    IMG_H   = 64;
-    startX  = 45; 
-    GAP_Y   = 10;
+  const chunks = [];
+  for (let i = 0; i < photos.length; i += 4) {
+    chunks.push(photos.slice(i, i + 4));
   }
 
   const getLabel = (type: string) => {
@@ -205,80 +184,103 @@ const drawPhotos = async (
     }
   };
 
-  const totalRows = Math.ceil(filtered.length / colCount);
-  const titleH = 14;
-  const neededForBlock = titleH + totalRows * (CARD_H + GAP_Y);
-
-  if (yRef.y + neededForBlock > 272) {
+  for (let c = 0; c < chunks.length; c++) {
+    const chunk = chunks[c];
     pdf.addPage();
-    yRef.y = drawPageHeader(pdf, logoData, mascotteData, store, sectionTitle);
-  }
+    let y = drawPageHeaderFn(pdf, logoData, mascotteData, store, 'DOCUMENTS & PHOTOS');
 
-  const remainingSpace = 272 - yRef.y;
-  if (remainingSpace > neededForBlock + 30) {
-    yRef.y += (remainingSpace - neededForBlock) / 2;
-  }
+    y += 4;
+    pdf.setFontSize(9.5);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(80, 80, 80);
+    pdf.text('PHOTOS ET ILLUSTRATIONS :', 15, y);
+    pdf.setDrawColor(210, 210, 210);
+    pdf.setLineWidth(0.2);
+    pdf.line(15, y + 2, 195, y + 2);
+    y += 8;
 
-  yRef.y += 4;
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(80, 95, 115);
-  pdf.text('PHOTOS ET ILLUSTRATIONS :', 15, yRef.y);
-  pdf.setDrawColor(210, 215, 225);
-  pdf.setLineWidth(0.2);
-  pdf.line(15, yRef.y + 2, 195, yRef.y + 2);
-  yRef.y += 8;
+    let colCount = 2;
+    let PHOTO_W = 84;
+    let CARD_H  = 80;
+    let IMG_H   = 54;
+    let GAP_X   = 8;
+    let GAP_Y   = 8;
+    let startX  = 15;
 
-  for (let row = 0; row < totalRows; row++) {
-    const rowPhotos = filtered.slice(row * colCount, row * colCount + colCount);
-
-    for (let col = 0; col < rowPhotos.length; col++) {
-      const photo = rowPhotos[col];
-      const pd = await loadPhotoBase64(photo.imageBase64);
-      if (!pd) continue;
-      
-      const cx = startX + col * (PHOTO_W + GAP_X);
-      const cy = yRef.y;
-
-      // Ombre douce
-      pdf.setFillColor(200, 208, 228);
-      pdf.roundedRect(cx + 1.5, cy + 1.5, PHOTO_W, CARD_H, 3, 3, 'F');
-
-      // Carte
-      pdf.setFillColor(252, 253, 255);
-      pdf.setDrawColor(195, 210, 240);
-      pdf.setLineWidth(0.3);
-      pdf.roundedRect(cx, cy, PHOTO_W, CARD_H, 3, 3, 'FD');
-
-      const pad = 3;
-      let dw = PHOTO_W - pad * 2;
-      let dh = dw / pd.ratio;
-      if (dh > IMG_H - pad * 2) { dh = IMG_H - pad * 2; dw = dh * pd.ratio; }
-      pdf.addImage(pd.img, 'JPEG', cx + (PHOTO_W - dw) / 2, cy + (IMG_H - dh) / 2, dw, dh);
-
-      pdf.setDrawColor(30, 58, 138);
-      pdf.setLineWidth(0.4);
-      pdf.line(cx + 3, cy + IMG_H, cx + PHOTO_W - 3, cy + IMG_H);
-
-      const labelText = getLabel(photo.type);
-      pdf.setFontSize(6.5);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(30, 58, 138);
-      const lblW = Math.min(pdf.getTextWidth(labelText) + 6, PHOTO_W - 8);
-      pdf.setFillColor(239, 246, 255);
-      pdf.roundedRect(cx + 3, cy + IMG_H + 2.5, lblW, 6.5, 1, 1, 'F');
-      pdf.text(labelText, cx + 6, cy + IMG_H + 7.5);
-
-      const desc = (photo.title || '').trim();
-      if (desc) {
-        pdf.setFontSize(7);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(55, 65, 81);
-        const dlines = pdf.splitTextToSize(desc, PHOTO_W - 8).slice(0, 2);
-        pdf.text(dlines, cx + 4, cy + IMG_H + 16);
-      }
+    if (chunk.length === 1) {
+      colCount = 1;
+      PHOTO_W = 140;
+      CARD_H  = 120;
+      IMG_H   = 90;
+      startX  = 35;
+    } else if (chunk.length === 2) {
+      colCount = 1;
+      PHOTO_W = 120;
+      CARD_H  = 90;
+      IMG_H   = 64;
+      startX  = 45;
+      GAP_Y   = 10;
     }
-    yRef.y += CARD_H + GAP_Y;
+
+    const totalRows = Math.ceil(chunk.length / colCount);
+    const neededForBlock = totalRows * (CARD_H + GAP_Y);
+
+    const remainingSpace = 272 - y;
+    if (remainingSpace > neededForBlock + 30) {
+      y += (remainingSpace - neededForBlock) / 2;
+    }
+
+    for (let row = 0; row < totalRows; row++) {
+      const rowPhotos = chunk.slice(row * colCount, row * colCount + colCount);
+
+      for (let col = 0; col < rowPhotos.length; col++) {
+        const photo = rowPhotos[col];
+        const pd = await loadPhotoBase64(photo.imageBase64);
+        if (!pd) continue;
+        
+        const cx = startX + col * (PHOTO_W + GAP_X);
+        const cy = y;
+
+        // Ombre douce
+        pdf.setFillColor(200, 208, 228);
+        pdf.roundedRect(cx + 1.5, cy + 1.5, PHOTO_W, CARD_H, 3, 3, 'F');
+
+        // Carte
+        pdf.setFillColor(252, 253, 255);
+        pdf.setDrawColor(195, 210, 240);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(cx, cy, PHOTO_W, CARD_H, 3, 3, 'FD');
+
+        const pad = 3;
+        let dw = PHOTO_W - pad * 2;
+        let dh = dw / pd.ratio;
+        if (dh > IMG_H - pad * 2) { dh = IMG_H - pad * 2; dw = dh * pd.ratio; }
+        pdf.addImage(pd.img, 'JPEG', cx + (PHOTO_W - dw) / 2, cy + (IMG_H - dh) / 2, dw, dh);
+
+        pdf.setDrawColor(30, 58, 138);
+        pdf.setLineWidth(0.4);
+        pdf.line(cx + 3, cy + IMG_H, cx + PHOTO_W - 3, cy + IMG_H);
+
+        const labelText = getLabel(photo.type);
+        pdf.setFontSize(6.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(30, 58, 138);
+        const lblW = Math.min(pdf.getTextWidth(labelText) + 6, PHOTO_W - 8);
+        pdf.setFillColor(239, 246, 255);
+        pdf.roundedRect(cx + 3, cy + IMG_H + 2.5, lblW, 6.5, 1, 1, 'F');
+        pdf.text(labelText, cx + 6, cy + IMG_H + 7.5);
+
+        const desc = (photo.title || '').trim();
+        if (desc) {
+          pdf.setFontSize(7);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(55, 65, 81);
+          const dlines = pdf.splitTextToSize(desc, PHOTO_W - 8).slice(0, 2);
+          pdf.text(dlines, cx + 4, cy + IMG_H + 16);
+        }
+      }
+      y += CARD_H + GAP_Y;
+    }
   }
 };
 
@@ -608,11 +610,6 @@ export const generateVisitePdf = async (store: DossierData): Promise<Blob> => {
     }
   }
 
-  // Photos Avant
-  const yRef = { y };
-  await drawPhotos(pdf, store.photos, ['Avant'], yRef, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP');
-  y = yRef.y;
-
   // Signature step visite
   const sig = store.stepSignatures?.['visite'];
   y = ensureSpace(pdf, y, 50, logo, masc, store, 'VISITE AVANT DEVIS SNIMOP');
@@ -763,10 +760,6 @@ export const generateBonPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'MATÉRIEL FOURNI', store.materielPrevu, y);
   y = addSection(pdf, 'Consignes / Remarques', store.consignes, y);
 
-  const yRef = { y };
-  await drawPhotos(pdf, store.photos, ['Avant', 'Pendant'], yRef, logo, masc, store, "BON D'INTERVENTION SNIMOP");
-  y = yRef.y;
-
   const sig = store.stepSignatures?.['intervention'];
   y = ensureSpace(pdf, y, 50, logo, masc, store, "BON D'INTERVENTION SNIMOP");
   drawSignatureBlock(pdf, sig, y, 'Bon Intervention');
@@ -797,10 +790,6 @@ export const generateRapportPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'Réserves', store.rapportReserves, y);
   y = addSection(pdf, 'Observations finales', store.observationsFinales, y);
 
-  const yRef = { y };
-  await drawPhotos(pdf, store.photos, ['Pendant', 'Après', 'Plan', 'Autre'], yRef, logo, masc, store, "RAPPORT D'INTERVENTION SNIMOP");
-  y = yRef.y;
-
   const sig = store.stepSignatures?.['rapport'];
   y = ensureSpace(pdf, y, 50, logo, masc, store, "RAPPORT D'INTERVENTION SNIMOP");
   drawSignatureBlock(pdf, sig, y, 'Rapport Final');
@@ -817,17 +806,14 @@ export const generatePhotosPdf = async (store: DossierData): Promise<Blob> => {
   const logo = await loadLogoBase64();
   const masc = await loadMascotteBase64();
 
-  let y = drawPageHeader(pdf, logo, masc, store, 'PHOTOS DU DOSSIER SNIMOP');
-
-  const allTypes = ['Avant', 'Pendant', 'Après', 'Plan', 'Autre'];
-  const yRef = { y };
-  await drawPhotos(pdf, store.photos, allTypes, yRef, logo, masc, store, 'PHOTOS DU DOSSIER');
-  
-  if (store.photos.length === 0) {
+  if (!store.photos || store.photos.length === 0) {
+    let y = drawPageHeader(pdf, logo, masc, store, 'DOCUMENTS & PHOTOS');
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'italic');
     pdf.setTextColor(150, 150, 150);
-    pdf.text('Aucune photo dans ce dossier.', 105, yRef.y + 20, { align: 'center' });
+    pdf.text('Aucune photo dans ce dossier.', 105, y + 20, { align: 'center' });
+  } else {
+    await renderPaginatedPhotos(pdf, store.photos, logo, masc, store, drawPageHeader);
   }
 
   addPagination(pdf);

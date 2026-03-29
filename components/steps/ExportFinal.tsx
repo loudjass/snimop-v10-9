@@ -8,6 +8,7 @@ import { ArrowLeft, Download, Share2, CheckCircle, MessageCircle, Mail } from 'l
 import jsPDF from 'jspdf';
 import { format, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { renderPaginatedPhotos } from '../../utils/pdfGenerators';
 
 import { SNIMOP_LOGO_PATH } from '@/components/ui/SnimopLogo';
 
@@ -303,135 +304,6 @@ export function ExportFinal() {
         return localY + (lines.length * 4.5) + 5;
       };
 
-      // HELPER POUR LES PHOTOS PAR SECTION (PREMIUM)
-      const drawSectionPhotos = async (types: string[], sectionLabel?: string) => {
-        const filtered = store.photos.filter(p => types.includes(p.type)).slice(0, 4);
-        if (filtered.length === 0) return;
-
-        let colCount = 2;
-        let PHOTO_W = 84;
-        let CARD_H  = 80;
-        let IMG_H   = 54;
-        let GAP_X   = 8;
-        let GAP_Y   = 8;
-        let startX  = 15;
-
-        // Vraie logique dynamique "Visible à l'œil nu"
-        if (filtered.length === 1) {
-          colCount = 1;
-          PHOTO_W = 140;
-          CARD_H  = 120;
-          IMG_H   = 90;
-          startX  = 35; // Centré (140)
-        } else if (filtered.length === 2) {
-          colCount = 1;
-          PHOTO_W = 120;
-          CARD_H  = 90;
-          IMG_H   = 64;
-          startX  = 45; // Centré (120)
-          GAP_Y   = 10;
-        }
-
-        const totalRows = Math.ceil(filtered.length / colCount);
-        const titleH = 14;
-        const neededForBlock = titleH + totalRows * (CARD_H + GAP_Y);
-
-        // Si tout le bloc ne rentre pas sur la page courante, on saute de page
-        if (y + neededForBlock > 272) {
-          pdf.addPage();
-          y = drawHeader(pdf, sectionLabel || "DOCUMENTS & PHOTOS");
-        }
-
-        // Si l'espace restant est important -> On centre verticalement
-        const remainingSpace = 272 - y;
-        if (remainingSpace > neededForBlock + 30) {
-          y += (remainingSpace - neededForBlock) / 2;
-        }
-
-        // Titre de section
-        y += 4;
-        pdf.setFontSize(9.5);
-        pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(80, 80, 80);
-        pdf.text("PHOTOS ET ILLUSTRATIONS :", 15, y);
-        pdf.setDrawColor(210, 210, 210);
-        pdf.setLineWidth(0.2);
-        pdf.line(15, y + 2, 195, y + 2);
-        y += 8;
-
-        // MAP TYPE TO LABEL
-        const getPhotoLabel = (type: string) => {
-          switch(type) {
-            case 'Avant':   return 'ÉTAT AVANT INTERVENTION';
-            case 'Après':   return 'ÉTAT APRÈS INTERVENTION';
-            case 'Pendant': return 'EN COURS D\'INTERVENTION';
-            case 'Plan':    return 'PLAN / SCHÉMA / DOCUMENT';
-            default:        return 'OBSERVATION TECHNIQUE';
-          }
-        };
-
-        for (let row = 0; row < totalRows; row++) {
-          const rowPhotos = filtered.slice(row * colCount, row * colCount + colCount);
-
-          for (let col = 0; col < rowPhotos.length; col++) {
-            const photo = rowPhotos[col];
-            const photoData = await loadPhotoBase64(photo.imageBase64);
-            if (!photoData) continue;
-
-            const containerX = startX + col * (PHOTO_W + GAP_X);
-            const containerY = y;
-
-            // Ombre douce
-            pdf.setFillColor(200, 208, 228);
-            pdf.roundedRect(containerX + 1.5, containerY + 1.5, PHOTO_W, CARD_H, 3, 3, 'F');
-
-            // Carte
-            pdf.setFillColor(252, 253, 255);
-            pdf.setDrawColor(195, 210, 240);
-            pdf.setLineWidth(0.3);
-            pdf.roundedRect(containerX, containerY, PHOTO_W, CARD_H, 3, 3, 'FD');
-
-            // Image centrée
-            const padding = 3;
-            let drawWidth  = PHOTO_W - padding * 2;
-            let drawHeight = drawWidth / photoData.ratio;
-            if (drawHeight > IMG_H - padding * 2) {
-              drawHeight = IMG_H - padding * 2;
-              drawWidth  = drawHeight * photoData.ratio;
-            }
-            const imgX = containerX + (PHOTO_W - drawWidth) / 2;
-            const imgY = containerY + (IMG_H - drawHeight) / 2;
-            pdf.addImage(photoData.img, 'JPEG', imgX, imgY, drawWidth, drawHeight);
-
-            // Séparateur fin bleu entre image et zone info
-            pdf.setDrawColor(30, 58, 138);
-            pdf.setLineWidth(0.4);
-            pdf.line(containerX + 3, containerY + IMG_H, containerX + PHOTO_W - 3, containerY + IMG_H);
-
-            // Badge label type
-            const labelTxt = getPhotoLabel(photo.type);
-            pdf.setFontSize(6.5);
-            pdf.setFont("helvetica", "bold");
-            pdf.setTextColor(30, 58, 138);
-            const lblW = Math.min(pdf.getTextWidth(labelTxt) + 6, PHOTO_W - 8);
-            pdf.setFillColor(239, 246, 255);
-            pdf.roundedRect(containerX + 3, containerY + IMG_H + 2.5, lblW, 6.5, 1, 1, 'F');
-            pdf.text(labelTxt, containerX + 6, containerY + IMG_H + 7.5);
-
-            // Description
-            const desc = (photo.title || '').trim();
-            if (desc) {
-              pdf.setFontSize(7);
-              pdf.setFont("helvetica", "normal");
-              pdf.setTextColor(55, 65, 81);
-              const descLines = pdf.splitTextToSize(desc, PHOTO_W - 8).slice(0, 2);
-              pdf.text(descLines, containerX + 4, containerY + IMG_H + 16);
-            }
-          }
-          y += CARD_H + GAP_Y;
-        }
-      };
-
       // PAGE 2
       pdf.addPage();
       y = drawHeader(pdf, "INFORMATIONS GÉNÉRALES SNIMOP");
@@ -577,8 +449,6 @@ export function ExportFinal() {
         y += 4; // breathing room
       }
 
-      await drawSectionPhotos(['Avant']);
-
       // PAGE 4
       pdf.addPage();
       y = drawHeader(pdf, "DEVIS SNIMOP");
@@ -695,7 +565,6 @@ export function ExportFinal() {
       y = addSection("SOLUTION PROPOSÉE", store.natureTravaux);
       y = addSection("MATÉRIEL FOURNI", store.materielPrevu);
       y = addSection("Consignes et Remarques", store.consignes);
-      await drawSectionPhotos(['Avant', 'Pendant']);
 
       // PAGE 6
       pdf.addPage();
@@ -709,7 +578,6 @@ export function ExportFinal() {
       y = Math.max(yL, yR);
       y = addSection("Réserves", store.rapportReserves);
       y = addSection("Observations finales", store.observationsFinales);
-      await drawSectionPhotos(['Pendant', 'Après', 'Plan', 'Autre']);
 
       // PAGE 7 — VALIDATION FINALE
       pdf.addPage();
@@ -793,6 +661,14 @@ export function ExportFinal() {
            ? format(new Date(store.stepSignatures['devis'].dateSignature), "dd/MM/yyyy à HH:mm", { locale: fr })
            : format(new Date(), "dd/MM/yyyy à HH:mm", { locale: fr });
         pdf.text(`Signé le ${signedAt}`, 152, y + 25, { align: 'center' });
+      }
+
+      // PHOTOS SUPPLEMENTAIRES
+      if (store.photos && store.photos.length > 0) {
+        const headerWrapper = (p: jsPDF, l: any, m: any, s: any, title: string) => {
+          return drawHeader(p, title);
+        };
+        await renderPaginatedPhotos(pdf, store.photos, null, null, store, headerWrapper);
       }
 
       // ─ Pagination
