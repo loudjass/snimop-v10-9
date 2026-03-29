@@ -796,13 +796,6 @@ export const generateBonPdf = async (store: DossierData): Promise<Blob> => {
   y = addSection(pdf, 'MATÉRIEL FOURNI', store.materielPrevu, y);
   y = addSection(pdf, 'Consignes / Remarques', store.consignes, y);
 
-  // ── PHOTOS DU BON D'INTERVENTION ──
-  const bonPhotos = store.photos?.filter(p => ['Avant', 'Pendant'].includes(p.type)) || [];
-  if (bonPhotos.length > 0) {
-    const hw = (p: jsPDF, l: any, m: any, s: any, title: string) => drawPageHeader(p, logo, masc, s, title);
-    y = await renderPaginatedPhotos(pdf, bonPhotos, logo, masc, store, hw) || y;
-  }
-
   const sig = store.stepSignatures?.['intervention'];
   y = ensureSpace(pdf, y, 50, logo, masc, store, "BON D'INTERVENTION SNIMOP");
   drawSignatureBlock(pdf, sig, y, 'Bon Intervention');
